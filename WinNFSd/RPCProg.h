@@ -16,29 +16,29 @@
 
 enum
 {
-	PRC_OK,
-	PRC_FAIL,
-	PRC_NOTIMP
+    PRC_OK,
+    PRC_FAIL,
+    PRC_NOTIMP
 };
 
 typedef struct
 {
-	unsigned int nVersion;
-	unsigned int nProc;
-	char *pRemoteAddr;
+    unsigned int nVersion;
+    unsigned int nProc;
+    char *pRemoteAddr;
 } ProcessParam;
 
 class CRPCProg
 {
-public:
-	CRPCProg();
-	virtual ~CRPCProg();
-	virtual int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam) = 0;
-	virtual void SetLogOn(bool bLogOn);
+    public:
+    CRPCProg();
+    virtual ~CRPCProg();
+    virtual int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam) = 0;
+    virtual void SetLogOn(bool bLogOn);
 
-protected:
-	bool m_bLogOn;
-	virtual int PrintLog(char *format, ...);
+    protected:
+    bool m_bLogOn;
+    virtual int PrintLog(char *format, ...);
 };
 
 #endif

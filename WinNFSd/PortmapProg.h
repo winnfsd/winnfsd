@@ -7,26 +7,26 @@
 
 typedef struct
 {
-	unsigned long prog;
-	unsigned long vers;
-	unsigned long proto;
-	unsigned long port;
+    unsigned long prog;
+    unsigned long vers;
+    unsigned long proto;
+    unsigned long port;
 } PORTMAP_HEADER;
 
 class CPortmapProg : public CRPCProg
 {
-public:
-	CPortmapProg();
-	virtual ~CPortmapProg();
-	void Set(unsigned long nProg, unsigned long nPort);
-	int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
+    public:
+    CPortmapProg();
+    virtual ~CPortmapProg();
+    void Set(unsigned long nProg, unsigned long nPort);
+    int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
 
-protected:
-	unsigned long m_nPortTable[PORT_NUM];
-	IInputStream *m_pInStream;
-	IOutputStream *m_pOutStream;
+    protected:
+    unsigned long m_nPortTable[PORT_NUM];
+    IInputStream *m_pInStream;
+    IOutputStream *m_pOutStream;
 
-	bool ProcedureGETPORT(void);
+    bool ProcedureGETPORT(void);
 };
 
 #endif

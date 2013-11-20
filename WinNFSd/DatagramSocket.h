@@ -7,21 +7,21 @@
 
 class CDatagramSocket
 {
-public:
-	CDatagramSocket();
-	~CDatagramSocket();
-	void SetListener(ISocketListener *pListener);
-	bool Open(int nPort);
-	void Close(void);
-	int GetPort(void);
-	void Run(void);
+    public:
+    CDatagramSocket();
+    ~CDatagramSocket();
+    void SetListener(ISocketListener *pListener);
+    bool Open(int nPort);
+    void Close(void);
+    int GetPort(void);
+    void Run(void);
 
-private:
-	int m_nPort;
-	SOCKET m_Socket;
-	CSocket *m_pSocket;
-	bool m_bClosed;
-	ISocketListener *m_pListener;
+    private:
+    int m_nPort;
+    SOCKET m_Socket;
+    CSocket *m_pSocket;
+    bool m_bClosed;
+    ISocketListener *m_pListener;
 };
 
 #endif

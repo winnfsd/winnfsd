@@ -5,8 +5,8 @@ class CSocket;
 
 class ISocketListener
 {
-public:
-	virtual void SocketReceived(CSocket *pSocket) = 0;
+    public:
+    virtual void SocketReceived(CSocket *pSocket) = 0;
 };
 
 #endif

@@ -7,22 +7,22 @@
 
 class CServerSocket
 {
-public:
-	CServerSocket();
-	~CServerSocket();
-	void SetListener(ISocketListener *pListener);
-	bool Open(int nPort, int nMaxNum);
-	void Close(void);
-	int GetPort(void);
-	void Run(void);
+    public:
+    CServerSocket();
+    ~CServerSocket();
+    void SetListener(ISocketListener *pListener);
+    bool Open(int nPort, int nMaxNum);
+    void Close(void);
+    int GetPort(void);
+    void Run(void);
 
-private:
-	int m_nPort, m_nMaxNum;
-	SOCKET m_ServerSocket;
-	bool m_bClosed;
-	ISocketListener *m_pListener;
-	HANDLE m_hThread;
-	CSocket **m_pSockets;
+    private:
+    int m_nPort, m_nMaxNum;
+    SOCKET m_ServerSocket;
+    bool m_bClosed;
+    ISocketListener *m_pListener;
+    HANDLE m_hThread;
+    CSocket **m_pSockets;
 };
 
 #endif

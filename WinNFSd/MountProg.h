@@ -7,32 +7,32 @@
 
 class CMountProg : public CRPCProg
 {
-public:
-	CMountProg();
-	virtual ~CMountProg();
-	void Export(char *path, char *pathAlias);
-	char *GetClientAddr(int nIndex);
-	int GetMountNumber(void);
-	int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
+    public:
+    CMountProg();
+    virtual ~CMountProg();
+    void Export(char *path, char *pathAlias);
+    char *GetClientAddr(int nIndex);
+    int GetMountNumber(void);
+    int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
 
-protected:
-	int m_nMountNum;
-	char m_pExportPath[MAXPATHLEN];
-	char m_pPathAlias[MAXPATHLEN];
-	char *m_pClientAddr[MOUNT_NUM_MAX];
-	IInputStream *m_pInStream;
-	IOutputStream *m_pOutStream;
+    protected:
+    int m_nMountNum;
+    char m_pExportPath[MAXPATHLEN];
+    char m_pPathAlias[MAXPATHLEN];
+    char *m_pClientAddr[MOUNT_NUM_MAX];
+    IInputStream *m_pInStream;
+    IOutputStream *m_pOutStream;
 
-	void ProcedureNULL(void);
-	void ProcedureMNT(void);
-	void ProcedureUMNT(void);
-	void ProcedureNOIMP(void);
+    void ProcedureNULL(void);
+    void ProcedureMNT(void);
+    void ProcedureUMNT(void);
+    void ProcedureNOIMP(void);
 
-private:
-	ProcessParam *m_pParam;
-	int m_nResult;
+    private:
+    ProcessParam *m_pParam;
+    int m_nResult;
 
-	char *GetPath(void);
+    char *GetPath(void);
 };
 
 #endif
