@@ -1,20 +1,21 @@
-WinNFSd_edited
-===============
+WinNFSd
+=======
 
 Introduction
 ------------
-* Fork of WinNFSd by vincentgao (http://sourceforge.net/projects/winnfsd/).
+* Fork of WinNFSd_edited by ZeWarden(http://github.com/ZeWaren/WinNFSd_edited), based on WinNFSd by vincentgao (http://sourceforge.net/projects/winnfsd/).
 * License: GPL.
 * Runs on all major versions of Windows.
 
 Original Description
 --------------------
 WinNFSd is a Network File System (NFS) server for Windows. You can use any NFS client to mount a directory of Windows and read/write files via NFS protocol. It is useful when you usually access files of Windows on Linux.
+Can export any folder with an alias. This can be very useful if you quickly need to share a directory using NFS on a Windows computer, without installing anything.
+Example: export `c:\truc\machin` as `/`.
 
 Additional features
 -------------------
-Can export any folder with an alias. This can be very useful if you quickly need to share a directory using NFS on a Windows computer, without installing anything.
-Example: export `c:\truc\machin` as `/`.
+Posibillity to export more than one folder by using a simple text file.
 
 Usage
 -------------------
