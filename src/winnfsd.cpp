@@ -7,7 +7,10 @@
 //#include <unistd.h>
 #include <stdio.h>
 #include <direct.h>
-#include <string.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
 
 #define SOCKET_NUM 3
 enum
@@ -22,9 +25,15 @@ enum
     PROG_NFS = 100003,
     PROG_MOUNT = 100005
 };
+enum pathFormats
+{
+    FORMAT_PATH = 1,
+    FORMAT_PATHALIAS = 2
+};
 
 static unsigned int g_nUID, g_nGID;
 static bool g_bLogOn;
+static char *g_sFileName;
 static CRPCServer g_RPCServer;
 static CPortmapProg g_PortmapProg;
 static CNFSProg g_NFSProg;
@@ -33,14 +42,15 @@ static CMountProg g_MountProg;
 static void printUsage(char *pExe)
 {
     printf("\n");
-    printf("Usage: %s [-id <uid> <gid>] [-log on | off] <export path> [alias path]\n\n", pExe);
+    printf("Usage: %s [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [export path] [alias path]\n\n", pExe);
+    printf("At least a file or a path is needed\n");
     printf("For example:\n");
     printf("On Windows> %s d:\\work\n", pExe);
     printf("On Linux> mount -t nfs 192.168.12.34:/d/work mount\n\n");
     printf("For another example:\n");
     printf("On Windows> %s d:\\work /exports\n", pExe);
     printf("On Linux> mount -t nfs 192.168.12.34:/exports\n\n");
-    printf("Use \".\" to export the current directory:\n");
+    printf("Use \".\" to export the current directory (works also for -filePath):\n");
     printf("On Windows> %s . /exports\n", pExe);
 }
 
@@ -77,12 +87,14 @@ static void printCount(void)
     int nNum;
 
     nNum = g_MountProg.GetMountNumber();
-    if (nNum == 0)
+
+    if (nNum == 0) {
         printf("There is no client mounted.\n");
-    else if (nNum == 1)
+    } else if (nNum == 1) {
         printf("There is 1 client mounted.\n");
-    else
+    } else {
         printf("There are %d clients mounted.\n", nNum);
+    }
 }
 
 static void printList(void)
@@ -136,8 +148,10 @@ static void inputCommand(void)
             } else {
                 printConfirmQuit();
                 fgets(command, 20, stdin);
-                if (command[0] == 'y' || command[0] == 'Y')
+
+                if (command[0] == 'y' || command[0] == 'Y') {
                     break;
+                }
             }
         } else if (_stricmp(command, "reset") == 0) {
             g_RPCServer.Set(PROG_NFS, NULL);
@@ -148,7 +162,7 @@ static void inputCommand(void)
     }
 }
 
-static void start(char *path, char *pathAlias)
+static void start(std::vector<std::vector<std::string>> paths)
 {
     int i;
     CDatagramSocket DatagramSockets[SOCKET_NUM];
@@ -159,7 +173,18 @@ static void start(char *path, char *pathAlias)
     g_PortmapProg.Set(PROG_MOUNT, MOUNT_PORT);  //map port for mount
     g_PortmapProg.Set(PROG_NFS, NFS_PORT);  //map port for nfs
     g_NFSProg.SetUserID(g_nUID, g_nGID);  //set uid and gid of files
-    g_MountProg.Export(path, pathAlias);  //export path for mount
+
+    int numberOfElements = paths.size();
+    printf("Mounting %i paths\n", numberOfElements);
+
+    for (i = 0; i < numberOfElements; i++) {
+        char *pPath = (char*)paths[i][0].c_str();
+        char *pPathAlias = (char*)paths[i][1].c_str();
+
+        printf("Path #%i is: %s, path alias is: %s\n", i + 1, pPath, pPathAlias);
+        g_MountProg.Export(pPath, pPathAlias);  //export path for mount
+    }
+    
     g_RPCServer.Set(PROG_PORTMAP, &g_PortmapProg);  //program for portmap
     g_RPCServer.Set(PROG_NFS, &g_NFSProg);  //program for nfs
     g_RPCServer.Set(PROG_MOUNT, &g_MountProg);  //program for mount
@@ -204,11 +229,87 @@ static void start(char *path, char *pathAlias)
     }
 }
 
+char *formatPath(char *pPath, pathFormats format)
+{
+    //Remove head spaces
+    while (*pPath == ' ') { 
+        ++pPath;
+    }
+
+    //Remove tail spaces
+    while (*(pPath + strlen(pPath) - 1) == ' ') {
+        *(pPath + strlen(pPath) - 1) = '\0';
+    }
+
+    //Remove head "
+    if (*pPath == '"') {
+        ++pPath;  
+    }
+
+    //Remove tail "
+    if (*(pPath + strlen(pPath) - 1) == '"') {
+        *(pPath + strlen(pPath) - 1) = '\0';  
+    }
+
+    //Check for right path format
+    if (format == FORMAT_PATH) {
+        if (pPath[0] == '.') {
+            static char path1[MAXPATHLEN];
+            _getcwd(path1, MAXPATHLEN);
+
+            if (pPath[1] == '\0') {
+                pPath = path1;
+            } else if (pPath[1] == '\\') {
+                strcat_s(path1, pPath + 1);
+                pPath = path1;
+            }
+            
+        } else if (pPath[1] != ':' || !((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
+            printf("Path format is incorrect.\n");
+            printf("Please use a full path such as C:\\work\n");
+
+            return NULL;
+        }
+
+        for (size_t i = 0; i < strlen(pPath); i++) {
+            if (pPath[i] == '/') {
+                pPath[i] = '\\';
+            }
+        }
+    } else if (format == FORMAT_PATHALIAS) {
+        if (pPath[0] != '/') { //check path alias format
+            printf("Path alias format is incorrect.\n");
+            printf("Please use a path like /exports\n");
+
+            return NULL;
+        }
+    }
+
+    return pPath;
+}
+
+char *formatPathAlias(char *pPathAlias)
+{
+    pPathAlias[1] = pPathAlias[0]; //transform mount path to Windows format
+    pPathAlias[0] = '/';
+
+    for (size_t i = 2; i < strlen(pPathAlias); i++) {
+        if (pPathAlias[i] == '\\') {
+            pPathAlias[i] = '/';
+        }
+    }
+
+    pPathAlias[strlen(pPathAlias)] = '\0';
+
+    return pPathAlias;
+}
+
 int main(int argc, char *argv[])
 {
+    std::vector<std::vector<std::string>> pPaths;
     char *pPath = NULL;
-    char m_pPathAlias[MAXPATHLEN];
-    char *pPathAlias = NULL;
+    int numberOfPaths = 1;
+
     WSADATA wsaData;
 
     printAbout();
@@ -219,96 +320,82 @@ int main(int argc, char *argv[])
         printUsage(pPath);
         return 1;
     }
-
+  
     g_nUID = g_nGID = 0;
     g_bLogOn = true;
+    g_sFileName = NULL;
 
     for (int i = 1; i < argc; i++) {//parse parameters
         if (_stricmp(argv[i], "-id") == 0) {
             g_nUID = atoi(argv[++i]);
             g_nGID = atoi(argv[++i]);
         } else if (_stricmp(argv[i], "-log") == 0) {
-            g_bLogOn = _stricmp(argv[++i], "off") != 0;
+            g_bLogOn = _stricmp(argv[++i], "off") != 0;           
+        } else if (_stricmp(argv[i], "-pathFile") == 0) {
+            g_sFileName = argv[++i];
+            int numberOfPathsFromFile = 0;
+
+            g_sFileName = formatPath(g_sFileName, FORMAT_PATH);
+
+            std::ifstream pathFile(g_sFileName);
+
+            if (pathFile.is_open()) {
+                std::string line;
+
+                while (std::getline(pathFile, line)) {
+                    char *pCurPath = (char*)malloc(line.size() + 1);
+                    pCurPath = (char*)line.c_str();
+                    pCurPath = formatPath(pCurPath, FORMAT_PATH);
+
+                    if (pCurPath != NULL) {
+                        char curPathAlias[MAXPATHLEN];
+                        strcpy_s(curPathAlias, pCurPath);
+                        char *pCurPathAlias = (char*)malloc(strlen(curPathAlias));
+                        pCurPathAlias = curPathAlias;
+
+                        pCurPathAlias = formatPathAlias(pCurPathAlias);
+
+                        std::vector<std::string> pCurPaths;
+                        pCurPaths.push_back(std::string(pCurPath));
+                        pCurPaths.push_back(std::string(pCurPathAlias));
+                        pPaths.push_back(pCurPaths);
+                    }
+                }
+            } else {
+                printf("Can't open file %s.\n", g_sFileName);
+                return 1;
+            }
         } else if (i == argc - 2) {
             pPath = argv[argc - 2];  //path is before the last parameter
+            pPath = formatPath(pPath, FORMAT_PATH);
 
-            if (*pPath == '"') {
-                ++pPath;  //remove head "
-            }
+            char *pCurPathAlias = argv[argc - 1]; //path alias is the last parameter
+            pCurPathAlias = formatPath(pCurPathAlias, FORMAT_PATHALIAS);
 
-            if (*(pPath + strlen(pPath) - 1) == '"') {
-                *(pPath + strlen(pPath) - 1) = '\0';  //remove tail "
-            }
-
-            if (pPath[0] == '.' && pPath[1] == '\0') {
-                static char path1[MAXPATHLEN];
-                _getcwd(path1, MAXPATHLEN);
-                pPath = path1;
-            } else if (pPath[1] != ':'
-                       || !((pPath[0] >= 'A' && pPath[0] <= 'Z')
-                       || (pPath[0] >= 'a' && pPath[0] <= 'z'))
-                       ) { //check path format
-                printf("Path format is incorrect.\n");
-                printf("Please use a full path such as C:\\work");
-                return 1;
-            }
-
-            pPathAlias = argv[argc - 1]; //path alias is the last parameter
-
-            if (*pPathAlias == '"') {
-                ++pPathAlias;  //remove head "
-            }
-
-            if (*(pPathAlias + strlen(pPathAlias) - 1) == '"') {
-                *(pPathAlias + strlen(pPathAlias) - 1) = '\0';  //remove tail "
-            }
-
-            if (pPathAlias[0] != '/') { //check path alias format
-                printf("Path alias format is incorrect.\n");
-                printf("Please use a path like /exports\n");
-                return 1;
+            if (pPath != NULL || pCurPathAlias != NULL) {
+                std::vector<std::string> pCurPaths;
+                pCurPaths.push_back(std::string(pPath));
+                pCurPaths.push_back(std::string(pCurPathAlias));
+                pPaths.push_back(pCurPaths);
             }
 
             break;
         } else if (i == argc - 1) {
-            pPath = argv[argc - 1];  //path is the last parameter
+            char *pPath = argv[argc - 1];  //path is the last parameter
+            pPath = formatPath(pPath, FORMAT_PATH);
 
-            if (*pPath == '"') {
-                ++pPath;  //remove head "
+            if (pPath != NULL) {
+                char curPathAlias[MAXPATHLEN];
+                strcpy_s(curPathAlias, pPath);
+                char *pCurPathAlias = curPathAlias;
+
+                pCurPathAlias = formatPathAlias(pCurPathAlias);
+
+                std::vector<std::string> pCurPaths;
+                pCurPaths.push_back(std::string(pPath));
+                pCurPaths.push_back(std::string(pCurPathAlias));
+                pPaths.push_back(pCurPaths);
             }
-
-
-            if (*(pPath + strlen(pPath) - 1) == '"') {
-                *(pPath + strlen(pPath) - 1) = '\0';  //remove tail "
-            }
-
-
-            if (pPath[0] == '.' && pPath[1] == '\0') {
-                static char path1[MAXPATHLEN];
-                _getcwd(path1, MAXPATHLEN);
-                pPath = path1;
-            } else if (pPath[1] != ':'
-                       || !((pPath[0] >= 'A' && pPath[0] <= 'Z')
-                       || (pPath[0] >= 'a' && pPath[0] <= 'z'))
-                       ) { //check path format
-                printf("Path format is incorrect.\n");
-                printf("Please use a full path such as C:\\work");
-                return 1;
-            }
-
-            strncpy_s(m_pPathAlias, pPath, sizeof(m_pPathAlias)-1);
-            m_pPathAlias[1] = m_pPathAlias[0];  //transform mount path to Windows format
-            m_pPathAlias[0] = '/';
-
-            for (size_t i = 2; i < strlen(pPath); i++) {
-                if (m_pPathAlias[i] == '\\') {
-                    m_pPathAlias[i] = '/';
-                }
-            }
-
-
-            m_pPathAlias[strlen(pPath)] = '\0';
-            pPathAlias = m_pPathAlias;
 
             break;
         }
@@ -317,22 +404,17 @@ int main(int argc, char *argv[])
     HWND console = FindWindow("ConsoleWindowClass", NULL);
 
     if (g_bLogOn == false && IsWindow(console)) {
-        //ShowWindow(console, SW_HIDE); // hides the window
+        ShowWindow(console, SW_HIDE); // hides the window
+    }
+
+    if (pPaths.size() <= 0) {
+        printf("No paths to mount\n");
+        return 1;
     }
 
     WSAStartup(0x0101, &wsaData);
-
-    if (pPath != NULL && pPathAlias != NULL) {
-        for (unsigned int i = 0; i < strlen(pPath); i++) {
-            if (pPath[i] == '/') {
-                pPath[i] = '\\';
-            }
-        }
-
-        printf("Starting, path is: %s, path alias is: %s\n", pPath, pPathAlias);
-        start(pPath, pPathAlias);
-    }
-
+    start(pPaths);
     WSACleanup();
+
     return 0;
 }

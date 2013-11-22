@@ -50,7 +50,7 @@ CRPCServer::CRPCServer()
     for (i = 0; i < PROG_NUM; i++) {
         m_pProgTable[i] = NULL;
     }
-
+        
     m_hMutex = CreateMutex(NULL, false, NULL);
 }
 
@@ -72,7 +72,7 @@ void CRPCServer::SetLogOn(bool bLogOn)
         if (m_pProgTable[i] != NULL) {
             m_pProgTable[i]->SetLogOn(bLogOn);
         }
-    }
+    }  
 }
 
 void CRPCServer::SocketReceived(CSocket *pSocket)
@@ -106,7 +106,7 @@ int CRPCServer::Process(int nType, IInputStream *pInStream, IOutputStream *pOutS
 
     if (nType == SOCK_STREAM) {
         pInStream->Read(&header.header);
-    }
+    }    
 
     pInStream->Read(&header.XID);
     pInStream->Read(&header.msg);
@@ -122,10 +122,10 @@ int CRPCServer::Process(int nType, IInputStream *pInStream, IOutputStream *pOutS
     if (pInStream->Read(&header.verf.length) < sizeof(header.verf.length)) {
         nResult = PRC_FAIL;
     }
-
+        
     if (pInStream->Skip(header.verf.length) < header.verf.length) {
         nResult = PRC_FAIL;
-    }
+    }      
 
     if (nType == SOCK_STREAM) {
         nPos = pOutStream->GetPosition();  //remember current position
@@ -144,7 +144,7 @@ int CRPCServer::Process(int nType, IInputStream *pInStream, IOutputStream *pOutS
         pOutStream->Write(PROG_UNAVAIL);
     } else if (m_pProgTable[header.prog - MIN_PROG_NUM] == NULL) { //program is unavailable
         pOutStream->Write(PROG_UNAVAIL);
-
+    } else {
         pOutStream->Write(SUCCESS);  //this value may be modified later if process failed
         param.nVersion = header.vers;
         param.nProc = header.proc;

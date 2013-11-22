@@ -19,21 +19,23 @@ Example: export `c:\truc\machin` as `/`.
 Usage
 -------------------
 	=====================================================
-	WinNFSd v2.0
-	Network File System server for Windows
-	Copyright (C) 2005 Ming-Yang Kao
-	Edited in 2011 by ZeWaren
-	=====================================================
+    WinNFSd v2.0
+    Network File System server for Windows
+    Copyright (C) 2005 Ming-Yang Kao
+    Edited in 2011 by ZeWaren
+    Edited in 2013 by Alexander Schneider (Jankowfsky AG)
+    =====================================================
 
-	Usage: winnfsd.exe [-id <uid> <gid>] [-log on | off] <export path> [alias path]
+    Usage: WinNFSd.exe [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [export path] [alias path]
 
-	For example:
-	On Windows> winnfsd.exe d:\work
-	On Linux> mount -t nfs 192.168.12.34:/d/work mount
+    At least a file or a path is needed
+    For example:
+    On Windows> WinNFSd.exe d:\work
+    On Linux> mount -t nfs 192.168.12.34:/d/work mount
 
-	For another example:
-	On Windows> winnfsd.exe d:\work /exports
-	On Linux> mount -t nfs 192.168.12.34:/exports
+    For another example:
+    On Windows> WinNFSd.exe d:\work /exports
+    On Linux> mount -t nfs 192.168.12.34:/exports
 
-	Use "." to export the current directory:
-	On Windows> winnfsd.exe . /exports
+    Use "." to export the current directory (works also for -filePath):
+    On Windows> WinNFSd.exe . /exports

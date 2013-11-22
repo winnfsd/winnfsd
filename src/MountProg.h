@@ -4,6 +4,7 @@
 #include "RPCProg.h"
 
 #define MOUNT_NUM_MAX 100
+#define MOUNT_PATH_MAX 100
 
 class CMountProg : public CRPCProg
 {
@@ -17,8 +18,9 @@ class CMountProg : public CRPCProg
 
     protected:
     int m_nMountNum;
-    char m_pExportPath[MAXPATHLEN];
-    char m_pPathAlias[MAXPATHLEN];
+    int m_nPathNum;
+    char m_pExportPaths[MOUNT_PATH_MAX][MAXPATHLEN];
+    char m_pPathAliases[MOUNT_PATH_MAX][MAXPATHLEN];
     char *m_pClientAddr[MOUNT_NUM_MAX];
     IInputStream *m_pInStream;
     IOutputStream *m_pOutStream;
@@ -32,7 +34,7 @@ class CMountProg : public CRPCProg
     ProcessParam *m_pParam;
     int m_nResult;
 
-    char *GetPath(void);
+    char *GetPath(int &pathNumber);
 };
 
 #endif
