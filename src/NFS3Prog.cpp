@@ -5,6 +5,7 @@
 #include <direct.h>
 #include <sys/stat.h>
 #include <assert.h>
+#define BUFFER_SIZE 1000
 
 enum
 {
@@ -189,7 +190,16 @@ void CNFS3Prog::SetUserID(unsigned int nUID, unsigned int nGID)
 
 int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam)
 {
-    static PPROC pf[] = { &CNFS3Prog::ProcedureNULL, &CNFS3Prog::ProcedureGETATTR, &CNFS3Prog::ProcedureSETATTR, &CNFS3Prog::ProcedureLOOKUP, &CNFS3Prog::ProcedureACCESS, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureREAD, &CNFS3Prog::ProcedureWRITE, &CNFS3Prog::ProcedureCREATE, &CNFS3Prog::ProcedureMKDIR, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureREMOVE, &CNFS3Prog::ProcedureRMDIR, &CNFS3Prog::ProcedureRENAME, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureREADDIR, &CNFS3Prog::ProcedureREADDIRPLUS, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureFSINFO };
+    static PPROC pf[] = { 
+        &CNFS3Prog::ProcedureNULL, &CNFS3Prog::ProcedureGETATTR, &CNFS3Prog::ProcedureSETATTR, 
+        &CNFS3Prog::ProcedureLOOKUP, &CNFS3Prog::ProcedureACCESS, &CNFS3Prog::ProcedureNOIMP, 
+        &CNFS3Prog::ProcedureREAD, &CNFS3Prog::ProcedureWRITE, &CNFS3Prog::ProcedureCREATE, 
+        &CNFS3Prog::ProcedureMKDIR, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureNOIMP, 
+        &CNFS3Prog::ProcedureREMOVE, &CNFS3Prog::ProcedureRMDIR, &CNFS3Prog::ProcedureRENAME, 
+        &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureREADDIR, &CNFS3Prog::ProcedureREADDIRPLUS, 
+        &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureFSINFO 
+    };
+
     nfsstat3 stat;
 
     PrintLog("NFS ");
@@ -402,6 +412,7 @@ nfsstat3 CNFS3Prog::ProcedureLOOKUP(void)
 
     PrintLog("LOOKUP");
     path = GetFullPath();
+
     stat = CheckFile(path);
 
     if (stat == NFS3_OK) {
@@ -470,11 +481,25 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
 
     if (stat == NFS3_OK) {
         data.SetSize(count);
-        fopen_s(&pFile, path, "rb");
-        fseek(pFile, (long)offset, SEEK_SET);
-        count = fread(data.contents, sizeof(char), count, pFile);
-        eof = fgetc(pFile) == EOF;
-        fclose(pFile);
+
+        errno_t errorNumber = fopen_s(&pFile, path, "rb");
+
+        if (pFile != NULL) {
+            fseek(pFile, (long)offset, SEEK_SET);
+            count = fread(data.contents, sizeof(char), count, pFile);
+            eof = fgetc(pFile) == EOF;
+            fclose(pFile);
+        } else {
+            char buffer[BUFFER_SIZE];
+            strerror_s(buffer, BUFFER_SIZE, errorNumber);
+            PrintLog(buffer);
+
+            if (errorNumber == 13) {
+                stat = NFS3ERR_ACCES;
+            } else {
+                stat = NFS3ERR_IO;
+            }
+        }
     }
 
     file_attributes.attributes_follow = false;
@@ -511,11 +536,25 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
     Read(&data);
     stat = CheckFile(path);
 
-    if (stat == NFS3_OK) {
-        fopen_s(&pFile, path, "r+b");
-        fseek(pFile, (long)offset, SEEK_SET);
-        count = fwrite(data.contents, sizeof(char), data.length, pFile);
-        fclose(pFile);
+    if (stat == NFS3_OK) {       
+        errno_t errorNumber = fopen_s(&pFile, path, "r+b");
+
+        if (pFile != NULL) {
+            fseek(pFile, (long)offset, SEEK_SET);
+            count = fwrite(data.contents, sizeof(char), data.length, pFile);
+            fclose(pFile);
+        } else {
+            char buffer[BUFFER_SIZE];
+            strerror_s(buffer, BUFFER_SIZE, errorNumber);
+            PrintLog(buffer);
+
+            if (errorNumber == 13) {
+                stat = NFS3ERR_ACCES;
+            } else {
+                stat = NFS3ERR_IO;
+            }
+        }
+
         stable = FILE_SYNC;
         verf = 0;
     }
@@ -548,8 +587,23 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
     PrintLog("CREATE");
     path = GetFullPath();
     Read(&how);
-    fopen_s(&pFile, path, "wb");
-    fclose(pFile);
+
+    errno_t errorNumber = fopen_s(&pFile, path, "wb");
+
+    if (pFile != NULL) {
+        char buffer[BUFFER_SIZE];
+        strerror_s(buffer, BUFFER_SIZE, errorNumber);
+        PrintLog(buffer);
+
+        if (errorNumber == 13) {
+            stat = NFS3ERR_ACCES;
+        } else {
+            stat = NFS3ERR_IO;
+        }
+
+        fclose(pFile);
+    }
+
     stat = pFile != NULL ? NFS3_OK : NFS3ERR_IO;
 
     if (stat == NFS3_OK) {
@@ -1120,7 +1174,7 @@ char *CNFS3Prog::GetPath(void)
 
     Read(&object);
     path = GetFilePath(object.contents);
-    PrintLog(" %s", path);
+    PrintLog(" %s ", path);
 
     return path;
 }
@@ -1143,7 +1197,7 @@ char *CNFS3Prog::GetFullPath(void)
     }
         
     sprintf_s(fullPath, "%s\\%s", path, dir.name.name); //concate path and filename
-    PrintLog(" %s", fullPath);
+    PrintLog(" %s ", fullPath);
 
     return fullPath;
 }

@@ -1,5 +1,5 @@
 @echo off
-tasklist /nh /fi "imagename eq winnfsd.exe" 2>nul | grep -c "winnfsd.exe" >nfsservicetmp
+tasklist /nh /fi "imagename eq winnfsd.exe" 2>nul | grep -i -c "winnfsd.exe" >nfsservicetmp
 set /p RUNNINGTASKS=<nfsservicetmp
 del nfsservicetmp
 

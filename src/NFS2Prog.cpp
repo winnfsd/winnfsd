@@ -180,11 +180,17 @@ void CNFS2Prog::ProcedureREAD(void)
     m_pInStream->Read(&nOffset);
     m_pInStream->Read(&nCount);
     m_pInStream->Read(&nTotalCount);
-    fopen_s(&file, path, "rb");
-    fseek(file, nOffset, SEEK_SET);
-    pBuffer = new char[nCount];
-    nCount = fread(pBuffer, sizeof(char), nCount, file);
-    fclose(file);
+
+    errno_t error = fopen_s(&file, path, "rb");
+
+    if (file != NULL) {
+        fseek(file, nOffset, SEEK_SET);
+        pBuffer = new char[nCount];
+        nCount = fread(pBuffer, sizeof(char), nCount, file);
+        fclose(file);
+    } else {
+        return;
+    }
 
     m_pOutStream->Write(NFS_OK);
     WriteFileAttributes(path);
@@ -221,9 +227,15 @@ void CNFS2Prog::ProcedureWRITE(void)
     m_pInStream->Read(pBuffer, nCount);
 
     fopen_s(&file, path, "r+b");
-    fseek(file, nOffset, SEEK_SET);
-    nCount = fwrite(pBuffer, sizeof(char), nCount, file);
-    fclose(file);
+
+    if (file != NULL) {
+        fseek(file, nOffset, SEEK_SET);
+        nCount = fwrite(pBuffer, sizeof(char), nCount, file);
+        fclose(file);
+    } else {
+        return;
+    }
+    
     delete[] pBuffer;
 
     m_pOutStream->Write(NFS_OK);
@@ -237,11 +249,19 @@ void CNFS2Prog::ProcedureCREATE(void)
 
     PrintLog("CREATE");
     path = GetFullPath();
-    if (path == NULL)
+
+    if (path == NULL) {
         return;
+    }
 
     fopen_s(&file, path, "wb");
-    fclose(file);
+
+    if (file != NULL) {
+        fclose(file);
+    } else {
+        return;
+    }
+
     m_pOutStream->Write(NFS_OK);
     m_pOutStream->Write(GetFileHandle(path), FHSIZE);
     WriteFileAttributes(path);
