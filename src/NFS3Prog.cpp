@@ -589,8 +589,11 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
     Read(&how);
 
     errno_t errorNumber = fopen_s(&pFile, path, "wb");
+    fclose(pFile);
 
     if (pFile != NULL) {
+        stat = NFS3_OK;
+    } else {
         char buffer[BUFFER_SIZE];
         strerror_s(buffer, BUFFER_SIZE, errorNumber);
         PrintLog(buffer);
@@ -600,10 +603,8 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
         } else {
             stat = NFS3ERR_IO;
         }
-
-        fclose(pFile);
     }
-
+    
     stat = pFile != NULL ? NFS3_OK : NFS3ERR_IO;
 
     if (stat == NFS3_OK) {
@@ -724,10 +725,26 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     pathTo = GetFullPath();
     stat = CheckFile(pathFrom);
 
-    if (stat == NFS3_OK) {
+    /*if (stat == NFS3_OK) {
         if (!RenameFile(pathFrom, pathTo)) {
             stat = NFS3ERR_IO;
         }            
+    }*/
+
+    if (stat == NFS3_OK) {
+        errno_t errorNumber = rename(pathFrom, pathTo);
+
+        if (errorNumber != 0) {
+            char buffer[BUFFER_SIZE];
+            strerror_s(buffer, BUFFER_SIZE, errorNumber);
+            PrintLog(buffer);
+
+            if (errorNumber == 13) {
+                stat = NFS3ERR_ACCES;
+            } else {
+                stat = NFS3ERR_IO;
+            }
+        }
     }
 
     fromdir_wcc.before.attributes_follow = false;
