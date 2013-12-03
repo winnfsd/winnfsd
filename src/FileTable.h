@@ -49,7 +49,7 @@ extern bool FileExists(char *path);
 extern unsigned long GetFileID(char *path);
 extern unsigned char *GetFileHandle(char *path);
 extern char *GetFilePath(unsigned char *handle);
-extern bool RenameFile(char *pathFrom, char *pathTo);
+extern int RenameFile(char *pathFrom, char *pathTo);
 extern bool RemoveFile(char *path);
 
 #endif

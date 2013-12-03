@@ -2,6 +2,7 @@
 #define _NFS3PROG_H_
 
 #include "RPCProg.h"
+#include <string>
 
 typedef unsigned __int64 uint64;
 typedef unsigned long uint32;
@@ -197,16 +198,23 @@ class CNFS3Prog : public CRPCProg
     nfsstat3 ProcedureSETATTR(void);
     nfsstat3 ProcedureLOOKUP(void);
     nfsstat3 ProcedureACCESS(void);
+    nfsstat3 ProcedureREADLINK(void);
     nfsstat3 ProcedureREAD(void);
     nfsstat3 ProcedureWRITE(void);
     nfsstat3 ProcedureCREATE(void);
     nfsstat3 ProcedureMKDIR(void);
+    nfsstat3 ProcedurSYMLINK(void);
+    nfsstat3 ProcedurMKNOD(void);
     nfsstat3 ProcedureREMOVE(void);
     nfsstat3 ProcedureRMDIR(void);
     nfsstat3 ProcedureRENAME(void);
+    nfsstat3 ProcedureLINK(void);
     nfsstat3 ProcedureREADDIR(void);
     nfsstat3 ProcedureREADDIRPLUS(void);
+    nfsstat3 ProcedureFSSTAT(void);
     nfsstat3 ProcedureFSINFO(void);
+    nfsstat3 ProcedurePATHCONF(void);
+    nfsstat3 ProcedureCOMMIT(void);
     nfsstat3 ProcedureNOIMP(void);
 
     void Read(bool *pBool);
@@ -235,10 +243,14 @@ class CNFS3Prog : public CRPCProg
     int m_nResult;
 
     char *GetPath(void);
+    void ReadDirectory(std::string &dirName, std::string &fileName);
     char *GetFullPath(void);
-    nfsstat3 CheckFile(char *path);
+    char *GetFullPath(std::string &dirName, std::string &fileName);
+    nfsstat3 CheckFile(char *fullPath);
+    nfsstat3 CheckFile(char *directory, char *fullPath);
     bool GetFileHandle(char *path, nfs_fh3 *pObject);
-    bool GetFileAttributes(char *path, fattr3 *pAttr);
+    bool GetFileAttributesForNFS(char *path, wcc_attr *pAttr);
+    bool GetFileAttributesForNFS(char *path, fattr3 *pAttr);
 };
 
 #endif

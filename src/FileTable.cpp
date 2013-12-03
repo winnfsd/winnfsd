@@ -121,7 +121,8 @@ FILE_ITEM *CFileTable::FindItemByPath(char *path)
     }
 
     if (pItem != NULL) {
-        PutItemInCache(pItem);  //put the found item in cache
+        //TODO IMPLEMENTED CACHE RIGHT
+        //PutItemInCache(pItem);  //put the found item in cache
     }
 
     return pItem;
@@ -241,7 +242,7 @@ char *GetFilePath(unsigned char *handle)
     return g_FileTable.GetPathByHandle(handle);
 }
 
-bool RenameFile(char *pathFrom, char *pathTo)
+int RenameFile(char *pathFrom, char *pathTo)
 {
     FILE_ITEM *pItem;
 
@@ -251,14 +252,16 @@ bool RenameFile(char *pathFrom, char *pathTo)
         return false;
     }
 
-    if (rename(pathFrom, pathTo) == 0) { //success
+    errno_t errorNumber = rename(pathFrom, pathTo);
+
+    if (errorNumber == 0) { //success
         delete[] pItem->path;
         pItem->nPathLen = strlen(pathTo);
         pItem->path = new char[pItem->nPathLen + 1];
         strcpy_s(pItem->path, (pItem->nPathLen + 1), pathTo);  //replace the path by new one
-        return true;
+        return errorNumber;
     } else {
-        return false;
+        return errorNumber;
     }
 }
 
