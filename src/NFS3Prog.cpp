@@ -194,12 +194,12 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
 {
     static PPROC pf[] = { 
         &CNFS3Prog::ProcedureNULL, &CNFS3Prog::ProcedureGETATTR, &CNFS3Prog::ProcedureSETATTR, 
-        &CNFS3Prog::ProcedureLOOKUP, &CNFS3Prog::ProcedureACCESS, &CNFS3Prog::ProcedureNOIMP, 
+        &CNFS3Prog::ProcedureLOOKUP, &CNFS3Prog::ProcedureACCESS, &CNFS3Prog::ProcedureREADLINK, 
         &CNFS3Prog::ProcedureREAD, &CNFS3Prog::ProcedureWRITE, &CNFS3Prog::ProcedureCREATE, 
-        &CNFS3Prog::ProcedureMKDIR, &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureNOIMP, 
+        &CNFS3Prog::ProcedureMKDIR, &CNFS3Prog::ProcedureSYMLINK, &CNFS3Prog::ProcedureMKNOD, 
         &CNFS3Prog::ProcedureREMOVE, &CNFS3Prog::ProcedureRMDIR, &CNFS3Prog::ProcedureRENAME, 
-        &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureREADDIR, &CNFS3Prog::ProcedureREADDIRPLUS, 
-        &CNFS3Prog::ProcedureNOIMP, &CNFS3Prog::ProcedureFSINFO, &CNFS3Prog::ProcedureFSSTAT, 
+        &CNFS3Prog::ProcedureLINK, &CNFS3Prog::ProcedureREADDIR, &CNFS3Prog::ProcedureREADDIRPLUS,
+        &CNFS3Prog::ProcedureFSSTAT, &CNFS3Prog::ProcedureFSINFO, &CNFS3Prog::ProcedurePATHCONF,
         &CNFS3Prog::ProcedureCOMMIT
     };
 
@@ -390,6 +390,10 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
                 nMode |= S_IWRITE;
             }
 
+            /*if ((new_attributes.mode.mode & 0x40) != 0) {
+                nMode |= S_IEXEC;
+            }*/
+
             if (_chmod(path, nMode) != 0) {
                 stat = NFS3ERR_INVAL;
             } else {
@@ -455,7 +459,7 @@ nfsstat3 CNFS3Prog::ProcedureACCESS(void)
     stat = CheckFile(path);
 
     if (stat == NFS3ERR_NOENT) {
-        stat == NFS3ERR_STALE;
+        stat = NFS3ERR_STALE;
     }
 
     obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
@@ -468,6 +472,14 @@ nfsstat3 CNFS3Prog::ProcedureACCESS(void)
     }
 
     return stat;
+}
+
+nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
+{
+    //TODO
+    PrintLog("READLINK");
+
+    return NFS3ERR_NOTSUPP;
 }
 
 nfsstat3 CNFS3Prog::ProcedureREAD(void)
@@ -691,6 +703,22 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
     return stat;
 }
 
+nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
+{
+    //TODO
+    PrintLog("SYMLINK");
+
+    return NFS3ERR_NOTSUPP;
+}
+
+nfsstat3 CNFS3Prog::ProcedureMKNOD(void)
+{
+    //TODO
+    PrintLog("MKNOD");
+
+    return NFS3ERR_NOTSUPP;
+}
+
 nfsstat3 CNFS3Prog::ProcedureREMOVE(void)
 {
     char *path;
@@ -805,6 +833,14 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     return stat;
 }
 
+nfsstat3 CNFS3Prog::ProcedureLINK(void)
+{
+    //TODO
+    PrintLog("LINK");
+
+    return NFS3ERR_NOTSUPP;
+}
+
 nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
 {
     char *path;
@@ -899,8 +935,10 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
 
     if (stat == NFS3_OK) {
         dir_attributes.attributes_follow = GetFileAttributesForNFS(path, &dir_attributes.attributes);
-        if (!dir_attributes.attributes_follow)
+        
+        if (!dir_attributes.attributes_follow) {
             stat = NFS3ERR_IO;
+        }
     }
 
     Write(&stat);
@@ -955,6 +993,50 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
     return stat;
 }
 
+nfsstat3 CNFS3Prog::ProcedureFSSTAT(void)
+{
+    char *path;
+    post_op_attr obj_attributes;
+    size3 tbytes, fbytes, abytes, tfiles, ffiles, afiles;
+    uint32 invarsec;
+
+    nfsstat3 stat;
+
+    PrintLog("FSSTAT");
+    path = GetPath();
+    stat = CheckFile(path);
+
+    if (stat == NFS3_OK) {
+        obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
+
+        if (obj_attributes.attributes_follow
+            && GetDiskFreeSpaceEx(path, (PULARGE_INTEGER)&fbytes, (PULARGE_INTEGER)&tbytes, (PULARGE_INTEGER)&abytes)
+            ) {
+            //tfiles = 99999999999;
+            //ffiles = 99999999999;
+            //afiles = 99999999999;
+            invarsec = 0;
+        } else {
+            stat = NFS3ERR_IO;
+        }
+    }
+
+    Write(&stat);
+    Write(&obj_attributes);
+
+    if (stat == NFS3_OK) {
+        Write(&tbytes);
+        Write(&fbytes);
+        Write(&abytes);
+        Write(&tfiles);
+        Write(&ffiles);
+        Write(&afiles);
+        Write(&invarsec);
+    }
+
+    return stat;
+}
+
 nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
 {
     char *path;
@@ -985,7 +1067,7 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
             time_delta.nseconds = 0;
             properties = FSF3_CANSETTIME;
         } else {
-            stat = NFS3ERR_IO;
+            stat = NFS3ERR_SERVERFAULT;
         }         
     }
 
@@ -1008,31 +1090,30 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
     return stat;
 }
 
-nfsstat3 CNFS3Prog::ProcedureFSSTAT(void)
+nfsstat3 CNFS3Prog::ProcedurePATHCONF(void)
 {
     char *path;
     post_op_attr obj_attributes;
-    size3 tbytes, fbytes, abytes, tfiles, ffiles, afiles;
-    uint32 invarsec;
-
     nfsstat3 stat;
+    uint32 linkmax, name_max;
+    bool no_trunc, chown_restricted, case_insensitive, case_preserving;
 
-    PrintLog("FSSTAT");
+    PrintLog("PATHCONF");
     path = GetPath();
     stat = CheckFile(path);
 
     if (stat == NFS3_OK) {
         obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
 
-        if (obj_attributes.attributes_follow 
-            && GetDiskFreeSpaceEx(path, (PULARGE_INTEGER)&tbytes, (PULARGE_INTEGER)&fbytes, (PULARGE_INTEGER)&abytes)
-        ) {
-            //tfiles = 99999999999;
-            //ffiles = 99999999999;
-            //afiles = 99999999999;
-            invarsec = 0;
+        if (obj_attributes.attributes_follow) {
+            linkmax = 1023;
+            name_max = 255;
+            no_trunc = true;
+            chown_restricted = true;
+            case_insensitive = true;
+            case_preserving = true;
         } else {
-            stat = NFS3ERR_IO;
+            stat = NFS3ERR_SERVERFAULT;
         }
     }
 
@@ -1040,69 +1121,29 @@ nfsstat3 CNFS3Prog::ProcedureFSSTAT(void)
     Write(&obj_attributes);
 
     if (stat == NFS3_OK) {
-        Write(&tbytes);
-        Write(&fbytes);
-        Write(&abytes);
-        Write(&tfiles);
-        Write(&ffiles);
-        Write(&afiles);
-        Write(&invarsec);
+        Write(&linkmax);
+        Write(&name_max);
+        Write(&no_trunc);
+        Write(&chown_restricted);
+        Write(&case_insensitive);
+        Write(&case_preserving);
     }
 
     return stat;
 }
 
+nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
+{
+    //TODO
+    PrintLog("COMMIT");
+    m_nResult = PRC_NOTIMP;
+
+    return NFS3_OK;
+}
+
 nfsstat3 CNFS3Prog::ProcedureNOIMP(void)
 {
     PrintLog("NOIMP");
-    m_nResult = PRC_NOTIMP;
-
-    return NFS3_OK;
-}
-
-nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
-{
-    PrintLog("READLINK");
-    m_nResult = PRC_NOTIMP;
-
-    return NFS3_OK;
-}
-
-nfsstat3 CNFS3Prog::ProcedurSYMLINK(void)
-{
-    PrintLog("SYMLINK");
-    m_nResult = PRC_NOTIMP;
-
-    return NFS3_OK;
-}
-
-nfsstat3 CNFS3Prog::ProcedurMKNOD(void)
-{
-    PrintLog("MKNOD");
-    m_nResult = PRC_NOTIMP;
-
-    return NFS3_OK;
-}
-
-nfsstat3 CNFS3Prog::ProcedureLINK(void)
-{
-    PrintLog("LINK");
-    m_nResult = PRC_NOTIMP;
-
-    return NFS3_OK;
-}
-
-nfsstat3 CNFS3Prog::ProcedurePATHCONF(void)
-{
-    PrintLog("PATHCONF");
-    m_nResult = PRC_NOTIMP;
-
-    return NFS3_OK;
-}
-
-nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
-{
-    PrintLog("COMMIT");
     m_nResult = PRC_NOTIMP;
 
     return NFS3_OK;
@@ -1422,7 +1463,7 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
 {
     struct stat data;
 
-    if (stat(path, &data) != 0) {
+    if (path == NULL || stat(path, &data) != 0) {
         return false;
     }
         
@@ -1451,9 +1492,9 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
         pAttr->mode |= 0x92;
     }
         
-    if ((data.st_mode & S_IEXEC) != 0) {
+    //if ((data.st_mode & S_IEXEC) != 0) {
         pAttr->mode |= 0x49;
-    }        
+    //}        
 
     pAttr->nlink = data.st_nlink;
     pAttr->uid = m_nUID;

@@ -203,8 +203,8 @@ class CNFS3Prog : public CRPCProg
     nfsstat3 ProcedureWRITE(void);
     nfsstat3 ProcedureCREATE(void);
     nfsstat3 ProcedureMKDIR(void);
-    nfsstat3 ProcedurSYMLINK(void);
-    nfsstat3 ProcedurMKNOD(void);
+    nfsstat3 ProcedureSYMLINK(void);
+    nfsstat3 ProcedureMKNOD(void);
     nfsstat3 ProcedureREMOVE(void);
     nfsstat3 ProcedureRMDIR(void);
     nfsstat3 ProcedureRENAME(void);
