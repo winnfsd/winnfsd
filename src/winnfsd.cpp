@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    HWND console = FindWindow("ConsoleWindowClass", NULL);
+    HWND console = GetConsoleWindow();
 
     if (g_bLogOn == false && IsWindow(console)) {
         ShowWindow(console, SW_HIDE); // hides the window
