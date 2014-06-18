@@ -1,6 +1,11 @@
 #include "MountProg.h"
 #include "FileTable.h"
 #include <string.h>
+#include <map>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <direct.h>
 
 enum
 {
@@ -27,19 +32,14 @@ typedef void (CMountProg::*PPROC)(void);
 
 CMountProg::CMountProg() : CRPCProg()
 {
-    for (int i = 0; i < MOUNT_PATH_MAX; i++) {
-        m_pExportPaths[i][0] = '\0';
-        m_pPathAliases[i][0] = '\0';
-    }    
-    
     m_nMountNum = 0;
-    m_nPathNum = 0;
     memset(m_pClientAddr, 0, sizeof(m_pClientAddr));
 }
 
 CMountProg::~CMountProg()
 {
     int i;
+	m_pPathFile = NULL;
 
     for (i = 0; i < MOUNT_NUM_MAX; i++) {
         delete[] m_pClientAddr[i];
@@ -47,14 +47,45 @@ CMountProg::~CMountProg()
 
 }
 
+bool CMountProg::SetPathFile(char *file)
+{
+	std::ifstream pathFile(file);
+
+	if (pathFile.good()) {
+		pathFile.close();
+		m_pPathFile = file;
+		return true;
+	}
+		
+	pathFile.close();
+	return false;
+}
+
 void CMountProg::Export(char *path, char *pathAlias)
 {
-    strncpy_s(m_pExportPaths[m_nPathNum], path, sizeof(m_pExportPaths[m_nPathNum]) - 1);
-    m_pExportPaths[m_nPathNum][sizeof(m_pExportPaths[m_nPathNum]) - 1] = '\0';
-    strncpy_s(m_pPathAliases[m_nPathNum], pathAlias, sizeof(m_pPathAliases[m_nPathNum]) - 1);
-    m_pPathAliases[m_nPathNum][sizeof(m_pPathAliases[m_nPathNum]) - 1] = '\0';
+	path = FormatPath(path, FORMAT_PATH);
 
-    m_nPathNum++;
+	if (path != NULL) {
+		pathAlias = FormatPathAlias(pathAlias);
+
+		if (m_PathMap.count(pathAlias) == 0) {
+			m_PathMap[pathAlias] = path;
+			printf("Path #%i is: %s, path alias is: %s\n", m_PathMap.size(), path, pathAlias);
+		} else {
+			printf("Path %s with path alias  %s already known\n", path, pathAlias);
+		}
+	}
+	
+}
+
+bool CMountProg::Refresh()
+{
+	if (m_pPathFile != NULL) {
+		ReadPathsFromFile(m_pPathFile);
+		return true;
+	}
+
+	return false;
 }
 
 int CMountProg::GetMountNumber(void)
@@ -112,45 +143,45 @@ void CMountProg::ProcedureNULL(void)
 
 void CMountProg::ProcedureMNT(void)
 {
-    char *path;
-    int i, pathNumber;
+	Refresh();
+    char *path = new char[MAXPATHLEN + 1];
+	int i;
 
-    PrintLog("MNT");
-    path = GetPath(pathNumber);
-    PrintLog(" from %s", m_pParam->pRemoteAddr);
+	PrintLog("MNT");
+	PrintLog(" from %s\n", m_pParam->pRemoteAddr);
 
-    if (m_nMountNum < MOUNT_NUM_MAX && _stricmp(path, m_pExportPaths[pathNumber]) == 0) { //path match
-        m_pOutStream->Write(MNT_OK); //OK
+	if (GetPath(&path)) {
+		m_pOutStream->Write(MNT_OK); //OK
 
-        if (m_pParam->nVersion == 1) {
-            m_pOutStream->Write(GetFileHandle(path), FHSIZE);  //fhandle
-        } else {
-            m_pOutStream->Write(NFS3_FHSIZE);  //length
-            m_pOutStream->Write(GetFileHandle(path), NFS3_FHSIZE);  //fhandle
-            m_pOutStream->Write(0);  //flavor
-        }
+		if (m_pParam->nVersion == 1) {
+			m_pOutStream->Write(GetFileHandle(path), FHSIZE);  //fhandle
+		} else {
+			m_pOutStream->Write(NFS3_FHSIZE);  //length
+			m_pOutStream->Write(GetFileHandle(path), NFS3_FHSIZE);  //fhandle
+			m_pOutStream->Write(0);  //flavor
+		}
 
-        ++m_nMountNum;
+		++m_nMountNum;
 
-        for (i = 0; i < MOUNT_NUM_MAX; i++) {
-            if (m_pClientAddr[i] == NULL) { //search an empty space
-                m_pClientAddr[i] = new char[strlen(m_pParam->pRemoteAddr) + 1];
-                strcpy_s(m_pClientAddr[i], (strlen(m_pParam->pRemoteAddr) + 1), m_pParam->pRemoteAddr);  //remember the client address
-                break;
-            }
-        }
-    } else {
-        m_pOutStream->Write(MNTERR_ACCESS);  //permission denied
+		for (i = 0; i < MOUNT_NUM_MAX; i++) {
+			if (m_pClientAddr[i] == NULL) { //search an empty space
+				m_pClientAddr[i] = new char[strlen(m_pParam->pRemoteAddr) + 1];
+				strcpy_s(m_pClientAddr[i], (strlen(m_pParam->pRemoteAddr) + 1), m_pParam->pRemoteAddr);  //remember the client address
+				break;
+			}
+		}
+	} else {
+		m_pOutStream->Write(MNTERR_ACCESS);  //permission denied
     }
 }
 
 void CMountProg::ProcedureUMNT(void)
 {
-    char *path;
+	char *path = new char[MAXPATHLEN + 1];
     int i;
 
     PrintLog("UMNT");
-    path = GetPath(i);
+    GetPath(&path);
     PrintLog(" from %s", m_pParam->pRemoteAddr);
 
     for (i = 0; i < MOUNT_NUM_MAX; i++) {
@@ -171,74 +202,184 @@ void CMountProg::ProcedureNOIMP(void)
     m_nResult = PRC_NOTIMP;
 }
 
-char *CMountProg::GetPath(int &pathNumber)
+bool CMountProg::GetPath(char **returnPath)
 {
-    pathNumber = 0;
-    unsigned long i, nSize;
-    static char path[MAXPATHLEN + 1];
-    static char finalPath[MAXPATHLEN + 1];
-    bool foundAlias = false;
+	unsigned long i, nSize;
+	static char path[MAXPATHLEN + 1];
+	static char finalPath[MAXPATHLEN + 1];
+	bool foundPath = false;
 
-    m_pInStream->Read(&nSize);
+	m_pInStream->Read(&nSize);
 
-    if (nSize > MAXPATHLEN) {
-        nSize = MAXPATHLEN;
-    }
+	if (nSize > MAXPATHLEN) {
+		nSize = MAXPATHLEN;
+	}
 
-    m_pInStream->Read(path, nSize);
+	typedef std::map<std::string, std::string>::iterator it_type;
+	m_pInStream->Read(path, nSize);
 
-    //We have the requested path, the local path and its alias
-    //Let's cache the various string sizes
-    for (int pathCount = 0; pathCount < m_nPathNum; pathCount++) {
-        size_t windowsPathSize = strlen(m_pExportPaths[pathCount]);
-        size_t aliasPathSize = strlen(m_pPathAliases[pathCount]);
-        size_t requestedPathSize = nSize;
+	for (it_type iterator = m_PathMap.begin(); iterator != m_PathMap.end(); iterator++) {
+		char* pathAlias = const_cast<char*>(iterator->first.c_str());
+		char* windowsPath = const_cast<char*>(iterator->second.c_str());
 
-        if ((requestedPathSize < windowsPathSize) && (strncmp(path, m_pPathAliases[pathCount], aliasPathSize) == 0)) {
-            foundAlias = true;
-            //The requested path starts with the alias. Let's replace the alias with the real path
-            strncpy_s(finalPath, m_pExportPaths[pathCount], sizeof(finalPath));
-            //strncpy_s(finalPath + windowsPathSize, (path + aliasPathSize), (sizeof(finalPath)-windowsPathSize));
-            finalPath[windowsPathSize + requestedPathSize - aliasPathSize] = '\0';
+		size_t aliasPathSize = strlen(pathAlias);
+		size_t windowsPathSize = strlen(windowsPath);
+		size_t requestedPathSize = nSize;
 
-            for (i = 0; i < requestedPathSize; i++) { //transform path to Windows format
-                if (finalPath[windowsPathSize + i] == '/') {
-                    finalPath[windowsPathSize + i] = '\\';
-                }
-            }
-        } else if ((strlen(path) == strlen(m_pPathAliases[pathCount])) && (strncmp(path, m_pPathAliases[pathCount], strlen(m_pPathAliases[pathCount])) == 0)) {
-            foundAlias = true;
-            //The requested path IS the alias
-            strncpy_s(finalPath, m_pExportPaths[pathCount], sizeof(finalPath));
-            finalPath[windowsPathSize] = '\0';
-        }
+		if ((requestedPathSize < windowsPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
+			foundPath = true;
+			//The requested path starts with the alias. Let's replace the alias with the real path
+			strncpy_s(finalPath, windowsPath, sizeof(finalPath));
+			//strncpy_s(finalPath + windowsPathSize, (path + aliasPathSize), (sizeof(finalPath)-windowsPathSize));
+			finalPath[windowsPathSize + requestedPathSize - aliasPathSize] = '\0';
 
-        if (foundAlias == true) {
-            pathNumber = pathCount;
-            break;
-        }
-    }
+			for (i = 0; i < requestedPathSize; i++) { //transform path to Windows format
+				if (finalPath[windowsPathSize + i] == '/') {
+					finalPath[windowsPathSize + i] = '\\';
+				}
+			}
+		} else if ((strlen(path) == strlen(pathAlias)) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
+			foundPath = true;
+			//The requested path IS the alias
+			strncpy_s(finalPath, windowsPath, sizeof(finalPath));
+			finalPath[windowsPathSize] = '\0';
+		} else if ((strlen(path) == strlen(windowsPath)) && (strncmp(path, pathAlias, windowsPathSize) == 0)) {
+			foundPath = true;
+			//The requested path does not start with the alias, let's treat it normally
+			strncpy_s(finalPath, path, sizeof(finalPath));
+			finalPath[0] = finalPath[1];  //transform mount path to Windows format
+			finalPath[1] = ':';
 
-    if (foundAlias == false) {
-        //The requested path does not start with the alias, let's treat it normally
-        strncpy_s(finalPath, path, sizeof(finalPath));
-        finalPath[0] = finalPath[1];  //transform mount path to Windows format
-        finalPath[1] = ':';
+			for (i = 2; i < nSize; i++) {
+				if (finalPath[i] == '/') {
+					finalPath[i] = '\\';
+				}
+			}
 
-        for (i = 2; i < nSize; i++) {
-            if (finalPath[i] == '/') {
-                finalPath[i] = '\\';
-            }
-        }
+			finalPath[nSize] = '\0';
+		}
 
-        finalPath[nSize] = '\0';
-    }
+		if (foundPath == true) {
+			break;
+		}
+	}
 
-    PrintLog("Final local requested path: %s\n", finalPath);
+	PrintLog("Final local requested path: %s\n", finalPath);
 
-    if ((nSize & 3) != 0) {
-        m_pInStream->Read(&i, 4 - (nSize & 3));  //skip opaque bytes
-    }
+	if ((nSize & 3) != 0) {
+		m_pInStream->Read(&i, 4 - (nSize & 3));  //skip opaque bytes
+	}
 
-    return finalPath;
+	*returnPath = finalPath;
+	return foundPath;
+}
+
+
+bool CMountProg::ReadPathsFromFile(char* sFileName)
+{
+	sFileName = FormatPath(sFileName, FORMAT_PATH);
+	std::ifstream pathFile(sFileName);
+
+	if (pathFile.is_open()) {
+		std::string line;
+
+		while (std::getline(pathFile, line)) {
+			char *pCurPath = (char*)malloc(line.size() + 1);
+			pCurPath = (char*)line.c_str();
+
+			if (pCurPath != NULL) {
+				char curPathAlias[MAXPATHLEN];
+				strcpy_s(curPathAlias, pCurPath);
+				char *pCurPathAlias = (char*)malloc(strlen(curPathAlias));
+				pCurPathAlias = curPathAlias;
+
+				Export(pCurPath, pCurPathAlias);
+			}
+		}
+	} else {
+		printf("Can't open file %s.\n", sFileName);
+		return false;
+	}
+
+	return true;
+}
+
+char *CMountProg::FormatPath(char *pPath, pathFormats format)
+{
+	//Remove head spaces
+	while (*pPath == ' ') {
+		++pPath;
+	}
+
+	//Remove tail spaces
+	while (*(pPath + strlen(pPath) - 1) == ' ') {
+		*(pPath + strlen(pPath) - 1) = '\0';
+	}
+
+	//Is comment?
+	if (*pPath == '#') {
+		return NULL;
+	}
+
+	//Remove head "
+	if (*pPath == '"') {
+		++pPath;
+	}
+
+	//Remove tail "
+	if (*(pPath + strlen(pPath) - 1) == '"') {
+		*(pPath + strlen(pPath) - 1) = '\0';
+	}
+
+	//Check for right path format
+	if (format == FORMAT_PATH) {
+		if (pPath[0] == '.') {
+			static char path1[MAXPATHLEN];
+			_getcwd(path1, MAXPATHLEN);
+
+			if (pPath[1] == '\0') {
+				pPath = path1;
+			} else if (pPath[1] == '\\') {
+				strcat_s(path1, pPath + 1);
+				pPath = path1;
+			}
+
+		} else if (pPath[1] != ':' || !((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
+			printf("Path format is incorrect.\n");
+			printf("Please use a full path such as C:\\work\n");
+
+			return NULL;
+		}
+
+		for (size_t i = 0; i < strlen(pPath); i++) {
+			if (pPath[i] == '/') {
+				pPath[i] = '\\';
+			}
+		}
+	} else if (format == FORMAT_PATHALIAS) {
+		if (pPath[0] != '/') { //check path alias format
+			printf("Path alias format is incorrect.\n");
+			printf("Please use a path like /exports\n");
+
+			return NULL;
+		}
+	}
+
+	return pPath;
+}
+
+char *CMountProg::FormatPathAlias(char *pPathAlias)
+{
+	pPathAlias[1] = pPathAlias[0]; //transform mount path to Windows format
+	pPathAlias[0] = '/';
+
+	for (size_t i = 2; i < strlen(pPathAlias); i++) {
+		if (pPathAlias[i] == '\\') {
+			pPathAlias[i] = '/';
+		}
+	}
+
+	pPathAlias[strlen(pPathAlias)] = '\0';
+
+	return pPathAlias;
 }

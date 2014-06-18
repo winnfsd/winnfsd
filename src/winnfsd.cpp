@@ -9,7 +9,6 @@
 #include <direct.h>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <vector>
 
 #define SOCKET_NUM 3
@@ -24,11 +23,6 @@ enum
     PROG_PORTMAP = 100000,
     PROG_NFS = 100003,
     PROG_MOUNT = 100005
-};
-enum pathFormats
-{
-    FORMAT_PATH = 1,
-    FORMAT_PATHALIAS = 2
 };
 
 static unsigned int g_nUID, g_nGID;
@@ -78,6 +72,8 @@ static void printHelp(void)
     printf("help: display help\n");
     printf("log on/off: display log messages or not\n");
     printf("list: list mounted clients\n");
+	printf("refresh: refresh the mounted folders\n");
+	printf("reset: reset the service\n");
     printf("quit: quit this program\n");
     printLine();
 }
@@ -119,196 +115,126 @@ static void printConfirmQuit(void)
     printf("Are you sure to quit? (y/N): ");
 }
 
+static void mountPaths(std::vector<std::vector<std::string>> paths)
+{
+	int i;
+	int numberOfElements = paths.size();
+
+	for (i = 0; i < numberOfElements; i++) {
+		char *pPath = (char*)paths[i][0].c_str();
+		char *pPathAlias = (char*)paths[i][1].c_str();
+		g_MountProg.Export(pPath, pPathAlias);  //export path for mount
+	}
+}
+
 static void inputCommand(void)
 {
-    char command[20];
+	char command[20];
 
-    printf("Type 'help' to see help\n\n");
+	printf("Type 'help' to see help\n\n");
 
-    while (true) {
-        fgets(command, 20, stdin);
+	while (true) {
+		fgets(command, 20, stdin);
 
-        if (command[strlen(command) - 1] == '\n') {
-            command[strlen(command) - 1] = '\0';
-        }
+		if (command[strlen(command) - 1] == '\n') {
+			command[strlen(command) - 1] = '\0';
+		}
 
-        if (_stricmp(command, "about") == 0) {
-            printAbout();
-        } else if (_stricmp(command, "help") == 0) {
-            printHelp();
-        } else if (_stricmp(command, "log on") == 0) {
-            g_RPCServer.SetLogOn(true);
-        } else if (_stricmp(command, "log off") == 0) {
-            g_RPCServer.SetLogOn(false);
-        } else if (_stricmp(command, "list") == 0) {
-            printList();
-        } else if (_stricmp(command, "quit") == 0) {
-            if (g_MountProg.GetMountNumber() == 0) {
-                break;
-            } else {
-                printConfirmQuit();
-                fgets(command, 20, stdin);
+		if (_stricmp(command, "about") == 0) {
+			printAbout();
+		} else if (_stricmp(command, "help") == 0) {
+			printHelp();
+		} else if (_stricmp(command, "log on") == 0) {
+			g_RPCServer.SetLogOn(true);
+		} else if (_stricmp(command, "log off") == 0) {
+			g_RPCServer.SetLogOn(false);
+		} else if (_stricmp(command, "list") == 0) {
+			printList();
+		} else if (_stricmp(command, "quit") == 0) {
+			if (g_MountProg.GetMountNumber() == 0) {
+				break;
+			} else {
+				printConfirmQuit();
+				fgets(command, 20, stdin);
 
-                if (command[0] == 'y' || command[0] == 'Y') {
-                    break;
-                }
-            }
-        } else if (_stricmp(command, "reset") == 0) {
-            g_RPCServer.Set(PROG_NFS, NULL);
-        } else if (strcmp(command, "") != 0) {
-            printf("Unknown command: '%s'\n", command);
-            printf("Type 'help' to see help\n");
-        }
-    }
+				if (command[0] == 'y' || command[0] == 'Y') {
+					break;
+				}
+			}
+		} else if (_stricmp(command, "refresh") == 0) {
+			g_MountProg.Refresh();
+		} else if (_stricmp(command, "reset") == 0) {
+			g_RPCServer.Set(PROG_NFS, NULL);
+		} else if (strcmp(command, "") != 0) {
+			printf("Unknown command: '%s'\n", command);
+			printf("Type 'help' to see help\n");
+		}
+	}
 }
 
 static void start(std::vector<std::vector<std::string>> paths)
 {
-    int i;
-    CDatagramSocket DatagramSockets[SOCKET_NUM];
-    CServerSocket ServerSockets[SOCKET_NUM];
-    bool bSuccess;
-    hostent *localHost;
+	int i;
+	CDatagramSocket DatagramSockets[SOCKET_NUM];
+	CServerSocket ServerSockets[SOCKET_NUM];
+	bool bSuccess;
+	hostent *localHost;
 
-    g_PortmapProg.Set(PROG_MOUNT, MOUNT_PORT);  //map port for mount
-    g_PortmapProg.Set(PROG_NFS, NFS_PORT);  //map port for nfs
-    g_NFSProg.SetUserID(g_nUID, g_nGID);  //set uid and gid of files
+	g_PortmapProg.Set(PROG_MOUNT, MOUNT_PORT);  //map port for mount
+	g_PortmapProg.Set(PROG_NFS, NFS_PORT);  //map port for nfs
+	g_NFSProg.SetUserID(g_nUID, g_nGID);  //set uid and gid of files
 
-    int numberOfElements = paths.size();
-    printf("Mounting %i paths\n", numberOfElements);
+	mountPaths(paths);
 
-    for (i = 0; i < numberOfElements; i++) {
-        char *pPath = (char*)paths[i][0].c_str();
-        char *pPathAlias = (char*)paths[i][1].c_str();
+	g_RPCServer.Set(PROG_PORTMAP, &g_PortmapProg);  //program for portmap
+	g_RPCServer.Set(PROG_NFS, &g_NFSProg);  //program for nfs
+	g_RPCServer.Set(PROG_MOUNT, &g_MountProg);  //program for mount
+	g_RPCServer.SetLogOn(g_bLogOn);
 
-        printf("Path #%i is: %s, path alias is: %s\n", i + 1, pPath, pPathAlias);
-        g_MountProg.Export(pPath, pPathAlias);  //export path for mount
-    }
-    
-    g_RPCServer.Set(PROG_PORTMAP, &g_PortmapProg);  //program for portmap
-    g_RPCServer.Set(PROG_NFS, &g_NFSProg);  //program for nfs
-    g_RPCServer.Set(PROG_MOUNT, &g_MountProg);  //program for mount
-    g_RPCServer.SetLogOn(g_bLogOn);
+	for (i = 0; i < SOCKET_NUM; i++) {
+		DatagramSockets[i].SetListener(&g_RPCServer);
+		ServerSockets[i].SetListener(&g_RPCServer);
+	}
 
-    for (i = 0; i < SOCKET_NUM; i++) {
-        DatagramSockets[i].SetListener(&g_RPCServer);
-        ServerSockets[i].SetListener(&g_RPCServer);
-    }
+	bSuccess = false;
 
-    bSuccess = false;
+	if (ServerSockets[0].Open(PORTMAP_PORT, 3) && DatagramSockets[0].Open(PORTMAP_PORT)) { //start portmap daemon
+		printf("Portmap daemon started\n");
 
-    if (ServerSockets[0].Open(PORTMAP_PORT, 3) && DatagramSockets[0].Open(PORTMAP_PORT)) { //start portmap daemon
-        printf("Portmap daemon started\n");
+		if (ServerSockets[1].Open(NFS_PORT, 10) && DatagramSockets[1].Open(NFS_PORT)) { //start nfs daemon
+			printf("NFS daemon started\n");
 
-        if (ServerSockets[1].Open(NFS_PORT, 10) && DatagramSockets[1].Open(NFS_PORT)) { //start nfs daemon
-            printf("NFS daemon started\n");
-
-            if (ServerSockets[2].Open(MOUNT_PORT, 3) && DatagramSockets[2].Open(MOUNT_PORT)) { //start mount daemon
-                printf("Mount daemon started\n");
-                bSuccess = true;  //all daemon started
-            } else {
-                printf("Mount daemon starts failed.\n");
-            }
-        } else {
-            printf("NFS daemon starts failed.\n");
-        }
-    } else {
-        printf("Portmap daemon starts failed.\n");
-    }
+			if (ServerSockets[2].Open(MOUNT_PORT, 3) && DatagramSockets[2].Open(MOUNT_PORT)) { //start mount daemon
+				printf("Mount daemon started\n");
+				bSuccess = true;  //all daemon started
+			} else {
+				printf("Mount daemon starts failed.\n");
+			}
+		} else {
+			printf("NFS daemon starts failed.\n");
+		}
+	} else {
+		printf("Portmap daemon starts failed.\n");
+	}
 
 
-    if (bSuccess) {
-        localHost = gethostbyname("");
-        printf("Local IP = %s\n", inet_ntoa(*(struct in_addr *)*localHost->h_addr_list));  //local address
-        inputCommand();  //wait for commands
-    }
+	if (bSuccess) {
+		localHost = gethostbyname("");
+		printf("Local IP = %s\n", inet_ntoa(*(struct in_addr *)*localHost->h_addr_list));  //local address
+		inputCommand();  //wait for commands
+	}
 
-    for (i = 0; i < SOCKET_NUM; i++) {
-        DatagramSockets[i].Close();
-        ServerSockets[i].Close();
-    }
-}
-
-char *formatPath(char *pPath, pathFormats format)
-{
-    //Remove head spaces
-    while (*pPath == ' ') { 
-        ++pPath;
-    }
-
-    //Remove tail spaces
-    while (*(pPath + strlen(pPath) - 1) == ' ') {
-        *(pPath + strlen(pPath) - 1) = '\0';
-    }
-
-    //Remove head "
-    if (*pPath == '"') {
-        ++pPath;  
-    }
-
-    //Remove tail "
-    if (*(pPath + strlen(pPath) - 1) == '"') {
-        *(pPath + strlen(pPath) - 1) = '\0';  
-    }
-
-    //Check for right path format
-    if (format == FORMAT_PATH) {
-        if (pPath[0] == '.') {
-            static char path1[MAXPATHLEN];
-            _getcwd(path1, MAXPATHLEN);
-
-            if (pPath[1] == '\0') {
-                pPath = path1;
-            } else if (pPath[1] == '\\') {
-                strcat_s(path1, pPath + 1);
-                pPath = path1;
-            }
-            
-        } else if (pPath[1] != ':' || !((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
-            printf("Path format is incorrect.\n");
-            printf("Please use a full path such as C:\\work\n");
-
-            return NULL;
-        }
-
-        for (size_t i = 0; i < strlen(pPath); i++) {
-            if (pPath[i] == '/') {
-                pPath[i] = '\\';
-            }
-        }
-    } else if (format == FORMAT_PATHALIAS) {
-        if (pPath[0] != '/') { //check path alias format
-            printf("Path alias format is incorrect.\n");
-            printf("Please use a path like /exports\n");
-
-            return NULL;
-        }
-    }
-
-    return pPath;
-}
-
-char *formatPathAlias(char *pPathAlias)
-{
-    pPathAlias[1] = pPathAlias[0]; //transform mount path to Windows format
-    pPathAlias[0] = '/';
-
-    for (size_t i = 2; i < strlen(pPathAlias); i++) {
-        if (pPathAlias[i] == '\\') {
-            pPathAlias[i] = '/';
-        }
-    }
-
-    pPathAlias[strlen(pPathAlias)] = '\0';
-
-    return pPathAlias;
+	for (i = 0; i < SOCKET_NUM; i++) {
+		DatagramSockets[i].Close();
+		ServerSockets[i].Close();
+	}
 }
 
 int main(int argc, char *argv[])
 {
     std::vector<std::vector<std::string>> pPaths;
     char *pPath = NULL;
-    int numberOfPaths = 1;
+	bool pathFile = false;
 
     WSADATA wsaData;
 
@@ -333,44 +259,18 @@ int main(int argc, char *argv[])
             g_bLogOn = _stricmp(argv[++i], "off") != 0;           
         } else if (_stricmp(argv[i], "-pathFile") == 0) {
             g_sFileName = argv[++i];
-            int numberOfPathsFromFile = 0;
 
-            g_sFileName = formatPath(g_sFileName, FORMAT_PATH);
-
-            std::ifstream pathFile(g_sFileName);
-
-            if (pathFile.is_open()) {
-                std::string line;
-
-                while (std::getline(pathFile, line)) {
-                    char *pCurPath = (char*)malloc(line.size() + 1);
-                    pCurPath = (char*)line.c_str();
-                    pCurPath = formatPath(pCurPath, FORMAT_PATH);
-
-                    if (pCurPath != NULL) {
-                        char curPathAlias[MAXPATHLEN];
-                        strcpy_s(curPathAlias, pCurPath);
-                        char *pCurPathAlias = (char*)malloc(strlen(curPathAlias));
-                        pCurPathAlias = curPathAlias;
-
-                        pCurPathAlias = formatPathAlias(pCurPathAlias);
-
-                        std::vector<std::string> pCurPaths;
-                        pCurPaths.push_back(std::string(pCurPath));
-                        pCurPaths.push_back(std::string(pCurPathAlias));
-                        pPaths.push_back(pCurPaths);
-                    }
-                }
-            } else {
+			if (g_MountProg.SetPathFile(g_sFileName) == false) {
                 printf("Can't open file %s.\n", g_sFileName);
                 return 1;
-            }
+			} else {
+				g_MountProg.Refresh();
+				pathFile = true;
+			}
         } else if (i == argc - 2) {
             pPath = argv[argc - 2];  //path is before the last parameter
-            pPath = formatPath(pPath, FORMAT_PATH);
 
             char *pCurPathAlias = argv[argc - 1]; //path alias is the last parameter
-            pCurPathAlias = formatPath(pCurPathAlias, FORMAT_PATHALIAS);
 
             if (pPath != NULL || pCurPathAlias != NULL) {
                 std::vector<std::string> pCurPaths;
@@ -382,14 +282,11 @@ int main(int argc, char *argv[])
             break;
         } else if (i == argc - 1) {
             char *pPath = argv[argc - 1];  //path is the last parameter
-            pPath = formatPath(pPath, FORMAT_PATH);
 
             if (pPath != NULL) {
                 char curPathAlias[MAXPATHLEN];
                 strcpy_s(curPathAlias, pPath);
                 char *pCurPathAlias = curPathAlias;
-
-                pCurPathAlias = formatPathAlias(pCurPathAlias);
 
                 std::vector<std::string> pCurPaths;
                 pCurPaths.push_back(std::string(pPath));
@@ -407,7 +304,7 @@ int main(int argc, char *argv[])
         ShowWindow(console, SW_HIDE); // hides the window
     }
 
-    if (pPaths.size() <= 0) {
+	if (pPaths.size() <= 0 && !pathFile) {
         printf("No paths to mount\n");
         return 1;
     }
