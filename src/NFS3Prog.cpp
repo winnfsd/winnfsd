@@ -1415,7 +1415,8 @@ nfsstat3 CNFS3Prog::CheckFile(char *fullPath)
         return NFS3ERR_STALE;
     }
 
-    if (!FileExists(fullPath)) {
+	//if (!FileExists(fullPath)) {
+	if (_access(fullPath, 0) != 0) {
         return NFS3ERR_NOENT;
     }
 
