@@ -727,16 +727,58 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
 
 nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 {
-	diropargs3 where;
-	symlinkdata3 symlink;
-
-	Read(&where);
-	Read(&symlink);
-	
     //TODO
     PrintLog("SYMLINK");
 
-    return NFS3ERR_NOTSUPP;
+    char* path;
+    sattr3 attributes;
+    post_op_fh3 obj;
+    post_op_attr obj_attributes;
+    wcc_data dir_wcc;
+    nfsstat3 stat;
+
+    diropargs3 where;
+    symlinkdata3 symlink;
+
+    std::string dirName;
+    std::string fileName;
+    ReadDirectory(dirName, fileName);
+    path = GetFullPath(dirName, fileName);
+
+    Read(&symlink);
+
+    _In_ LPTSTR lpSymlinkFileName = path;
+    _In_ LPTSTR lpTargetFileName = symlink.symlink_data.path;
+
+    //TODO : check if is file or directory
+    BOOLEAN failed = CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName, 0x0);
+
+    if (failed != 0) {
+        stat = NFS3_OK;
+        obj.handle_follows = GetFileHandle(path, &obj.handle);
+        obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
+    }
+    else {
+        stat = NFS3ERR_IO;
+        PrintLog("An error occurs or file already exists.");
+        stat = CheckFile(path);
+        if (stat != NFS3_OK) {
+            stat = NFS3ERR_IO;
+        }
+    }
+
+    dir_wcc.after.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.after.attributes);
+
+    Write(&stat);
+
+    if (stat == NFS3_OK) {
+        Write(&obj);
+        Write(&obj_attributes);
+    }
+
+    Write(&dir_wcc);
+
+    return stat;
 }
 
 nfsstat3 CNFS3Prog::ProcedureMKNOD(void)
