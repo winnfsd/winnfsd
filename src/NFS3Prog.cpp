@@ -173,6 +173,28 @@ void filename3::Set(char *str)
     strcpy_s(name, (strlen(str) + 1), str);
 }
 
+nfspath3::nfspath3() : opaque()
+{
+    path = NULL;
+}
+
+nfspath3::~nfspath3()
+{
+}
+
+void nfspath3::SetSize(uint32 len)
+{
+    opaque::SetSize(len + 1);
+    length = len;
+    path = (char *)contents;
+}
+
+void nfspath3::Set(char *str)
+{
+    SetSize(strlen(str));
+    strcpy_s(path, (strlen(str) + 1), str);
+}
+
 typedef nfsstat3(CNFS3Prog::*PPROC)(void);
 
 CNFS3Prog::CNFS3Prog() : CRPCProg()
@@ -705,6 +727,12 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
 
 nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 {
+	diropargs3 where;
+	symlinkdata3 symlink;
+
+	Read(&where);
+	Read(&symlink);
+	
     //TODO
     PrintLog("SYMLINK");
 
@@ -1263,6 +1291,12 @@ void CNFS3Prog::Read(createhow3 *pHow)
     } else {
         Read(&pHow->verf);
     }       
+}
+
+void CNFS3Prog::Read(symlinkdata3 *pSymlink)
+{
+	Read(&pSymlink->symlink_attributes);
+	Read(&pSymlink->symlink_data);
 }
 
 void CNFS3Prog::Write(bool *pBool)

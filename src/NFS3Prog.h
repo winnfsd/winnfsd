@@ -54,6 +54,17 @@ class filename3 : public opaque
     void Set(char *str);
 };
 
+class nfspath3 : public opaque
+{
+	public:
+	char *path;
+
+	nfspath3();
+	~nfspath3();
+	void SetSize(uint32 len);
+    void Set(char *str);
+};
+
 typedef struct
 {
     uint32 specdata1;
@@ -179,6 +190,12 @@ typedef struct
     createverf3 verf;
 } createhow3;
 
+typedef struct 
+{
+	sattr3 symlink_attributes;
+	nfspath3 symlink_data;
+} symlinkdata3;
+
 class CNFS3Prog : public CRPCProg
 {
     public:
@@ -226,6 +243,7 @@ class CNFS3Prog : public CRPCProg
     void Read(opaque *pOpaque);
     void Read(nfstime3 *pTime);
     void Read(createhow3 *pHow);
+	void Read(symlinkdata3 *pSymlink);
     void Write(bool *pBool);
     void Write(uint32 *pUint32);
     void Write(uint64 *pUint64);
