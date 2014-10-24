@@ -3,6 +3,7 @@
 
 #include "RPCProg.h"
 #include <string>
+#include <Windows.h>
 
 typedef unsigned __int64 uint64;
 typedef unsigned long uint32;
@@ -195,6 +196,32 @@ typedef struct
 	sattr3 symlink_attributes;
 	nfspath3 symlink_data;
 } symlinkdata3;
+
+typedef struct _REPARSE_DATA_BUFFER {
+	ULONG  ReparseTag;
+	USHORT ReparseDataLength;
+	USHORT Reserved;
+	union {
+		struct {
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			ULONG  Flags;
+			WCHAR  PathBuffer[1];
+		} SymbolicLinkReparseBuffer;
+		struct {
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			WCHAR  PathBuffer[1];
+		} MountPointReparseBuffer;
+		struct {
+			UCHAR DataBuffer[1];
+		} GenericReparseBuffer;
+	};
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 
 class CNFS3Prog : public CRPCProg
 {
