@@ -731,7 +731,6 @@ nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
     PrintLog("SYMLINK");
 
     char* path;
-    sattr3 attributes;
     post_op_fh3 obj;
     post_op_attr obj_attributes;
     wcc_data dir_wcc;
@@ -739,6 +738,9 @@ nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 
     diropargs3 where;
     symlinkdata3 symlink;
+
+    DWORD targetFileAttr;
+    DWORD dwFlags;
 
     std::string dirName;
     std::string fileName;
@@ -750,8 +752,16 @@ nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
     _In_ LPTSTR lpSymlinkFileName = path;
     _In_ LPTSTR lpTargetFileName = symlink.symlink_data.path;
 
-    //TODO : check if is file or directory
-    BOOLEAN failed = CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName, 0x0);
+    std::string fullTargetPath = dirName + std::string("\\") + std::string(lpTargetFileName);
+
+	targetFileAttr = GetFileAttributes(fullTargetPath.c_str());
+
+    dwFlags = 0x0;
+	if (targetFileAttr & FILE_ATTRIBUTE_DIRECTORY) {
+        dwFlags = SYMBOLIC_LINK_FLAG_DIRECTORY;
+    }
+
+    BOOLEAN failed = CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName, dwFlags);
 
     if (failed != 0) {
         stat = NFS3_OK;
