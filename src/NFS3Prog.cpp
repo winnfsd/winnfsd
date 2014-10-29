@@ -1493,10 +1493,10 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
 
     if (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT) {
         pAttr->type = NF3LNK;
-        dwFlagsAndAttributes = FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT;
+		dwFlagsAndAttributes = FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS;
     }
 
-    hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFlagsAndAttributes, NULL);
+	hFile = CreateFile(path, FILE_READ_EA, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFlagsAndAttributes, NULL);
 
     if (hFile == INVALID_HANDLE_VALUE) {
         return false;
