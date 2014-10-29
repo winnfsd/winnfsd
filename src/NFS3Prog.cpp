@@ -1506,8 +1506,11 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
 	CloseHandle(hFile);
     pAttr->mode = 0;
 
+	// Set execution right for all
+    pAttr->mode |= 0x49;
+
     // Set read right for all
-    pAttr->mode |= 0x124;;
+    pAttr->mode |= 0x124;
 
     if ((lpFileInformation.dwFileAttributes & FILE_ATTRIBUTE_READONLY) == 0)
     {
