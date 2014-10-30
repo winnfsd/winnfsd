@@ -498,74 +498,74 @@ nfsstat3 CNFS3Prog::ProcedureACCESS(void)
 
 nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
 {
-	PrintLog("READLINK");
-	char *path;
-	post_op_attr symlink_attributes;
-	nfspath3 data = nfspath3();
+    PrintLog("READLINK");
+    char *path;
+    post_op_attr symlink_attributes;
+    nfspath3 data = nfspath3();
 
-	//opaque data;
-	nfsstat3 stat;
+    //opaque data;
+    nfsstat3 stat;
 
-	HANDLE hFile;
-	REPARSE_DATA_BUFFER *lpOutBuffer;
-	lpOutBuffer = (REPARSE_DATA_BUFFER*)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-	DWORD bytesReturned;
+    HANDLE hFile;
+    REPARSE_DATA_BUFFER *lpOutBuffer;
+    lpOutBuffer = (REPARSE_DATA_BUFFER*)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+    DWORD bytesReturned;
 
-	path = GetPath();
-	stat = CheckFile(path);
-	if (stat == NFS3_OK) {
+    path = GetPath();
+    stat = CheckFile(path);
+    if (stat == NFS3_OK) {
 
-		hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+        hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
-		if (hFile == INVALID_HANDLE_VALUE) {
-			stat = NFS3ERR_IO;
-		}
-		else
-		{
-			lpOutBuffer = (REPARSE_DATA_BUFFER*)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-			if (!lpOutBuffer) {
-				stat = NFS3ERR_IO;
-			}
-			else {
-				DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, lpOutBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL);
+        if (hFile == INVALID_HANDLE_VALUE) {
+            stat = NFS3ERR_IO;
+        }
+        else
+        {
+            lpOutBuffer = (REPARSE_DATA_BUFFER*)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+            if (!lpOutBuffer) {
+                stat = NFS3ERR_IO;
+            }
+            else {
+                DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, lpOutBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL);
 
-				if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
-				{
-					/*
-					printf("Symbolic-Link\n");
-					size_t slen = lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
-					WCHAR *szSubName = new WCHAR[slen + 1];
-					wcsncpy_s(szSubName, slen + 1, &lpOutBuffer.SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR)], slen);
-					szSubName[slen] = 0;
-					delete[] szSubName;
-					*/
+                if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+                {
+                    /*
+                    printf("Symbolic-Link\n");
+                    size_t slen = lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+                    WCHAR *szSubName = new WCHAR[slen + 1];
+                    wcsncpy_s(szSubName, slen + 1, &lpOutBuffer.SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR)], slen);
+                    szSubName[slen] = 0;
+                    delete[] szSubName;
+                    */
 
-					size_t plen = lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
-					WCHAR *szPrintName = new WCHAR[plen + 1];
-					wcsncpy_s(szPrintName, plen + 1, &lpOutBuffer->SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)], plen);
-					szPrintName[plen] = 0;
-					char *pMBBuffer = (char *)malloc((plen + 1));
-					size_t i;
-					wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
+                    size_t plen = lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
+                    WCHAR *szPrintName = new WCHAR[plen + 1];
+                    wcsncpy_s(szPrintName, plen + 1, &lpOutBuffer->SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)], plen);
+                    szPrintName[plen] = 0;
+                    char *pMBBuffer = (char *)malloc((plen + 1));
+                    size_t i;
+                    wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
 
-					data.Set(pMBBuffer);
-					free(pMBBuffer);
-				}
-				free(lpOutBuffer);
-			}
-		}
-		CloseHandle(hFile);
-	}
+                    data.Set(pMBBuffer);
+                    free(pMBBuffer);
+                }
+                free(lpOutBuffer);
+            }
+        }
+        CloseHandle(hFile);
+    }
 
-	symlink_attributes.attributes_follow = GetFileAttributesForNFS(path, &symlink_attributes.attributes);
+    symlink_attributes.attributes_follow = GetFileAttributesForNFS(path, &symlink_attributes.attributes);
 
-	Write(&stat);
-	Write(&symlink_attributes);
-	if (stat == NFS3_OK) {
-		Write(&data);
-	}
+    Write(&stat);
+    Write(&symlink_attributes);
+    if (stat == NFS3_OK) {
+        Write(&data);
+    }
 
-	return stat;
+    return stat;
 }
 
 nfsstat3 CNFS3Prog::ProcedureREAD(void)
