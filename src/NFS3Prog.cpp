@@ -816,9 +816,16 @@ nfsstat3 CNFS3Prog::ProcedureREMOVE(void)
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
     if (stat == NFS3_OK) {
-        if (!RemoveFile(path)) {
-            stat = NFS3ERR_IO;
-        }          
+        DWORD fileAttr = GetFileAttributes(path);
+        if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
+            if (RemoveDirectory(path) == 0) {
+                stat = NFS3ERR_IO;
+            }
+        } else {
+            if (!RemoveFile(path)) {
+                stat = NFS3ERR_IO;
+            }
+        }
     }
 
     dir_wcc.after.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.after.attributes);
