@@ -835,10 +835,39 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
 
 nfsstat3 CNFS3Prog::ProcedureLINK(void)
 {
-    //TODO
     PrintLog("LINK");
+    char *filePath;
+    diropargs3 link;
+    std::string dirName;
+    std::string fileName;
+    nfsstat3 stat;
+    post_op_attr obj_attributes;
+    wcc_data dir_wcc;
 
-    return NFS3ERR_NOTSUPP;
+    filePath = GetPath();
+    ReadDirectory(dirName, fileName);
+
+    char *linkFullPath = GetFullPath(dirName, fileName);
+
+    if (CreateHardLink(linkFullPath, filePath, NULL) == 0) {
+        stat = NFS3ERR_IO;
+    }
+    stat = CheckFile(linkFullPath);
+    if (stat == NFS3_OK) {
+        obj_attributes.attributes_follow = GetFileAttributesForNFS(filePath, &obj_attributes.attributes);
+
+        if (!obj_attributes.attributes_follow) {
+            stat = NFS3ERR_IO;
+        }
+    }
+
+    dir_wcc.after.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.after.attributes);
+
+    Write(&stat);
+    Write(&obj_attributes);
+    Write(&dir_wcc);
+
+    return stat;
 }
 
 nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
