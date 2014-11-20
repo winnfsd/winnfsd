@@ -3,6 +3,7 @@
 
 #include "RPCProg.h"
 #include <string>
+#include <Windows.h>
 
 typedef unsigned __int64 uint64;
 typedef unsigned long uint32;
@@ -251,6 +252,7 @@ class CNFS3Prog : public CRPCProg
     bool GetFileHandle(char *path, nfs_fh3 *pObject);
     bool GetFileAttributesForNFS(char *path, wcc_attr *pAttr);
     bool GetFileAttributesForNFS(char *path, fattr3 *pAttr);
+    LONGLONG FileTimeToPOSIX(FILETIME ft);
 };
 
 #endif

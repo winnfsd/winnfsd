@@ -1462,56 +1462,97 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, wcc_attr *pAttr)
 
 bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
 {
-    struct stat data;
+    DWORD fileAttr;
+    BY_HANDLE_FILE_INFORMATION lpFileInformation;
+    HANDLE hFile;
+    DWORD dwFlagsAndAttributes;
 
-    if (path == NULL || stat(path, &data) != 0) {
+    fileAttr = GetFileAttributes(path);
+
+    if (path == NULL || fileAttr == INVALID_FILE_ATTRIBUTES)
+    {
         return false;
     }
-        
-    switch (data.st_mode & S_IFMT) {
-        case S_IFREG:
-            pAttr->type = NF3REG;
-            break;
-        case S_IFDIR:
-            pAttr->type = NF3DIR;
-            break;
-        case S_IFCHR:
-            pAttr->type = NF3CHR;
-            break;
-        default:
-            pAttr->type = 0;
-            break;
+
+    dwFlagsAndAttributes = 0;
+    if (fileAttr & FILE_ATTRIBUTE_DIRECTORY) {
+        pAttr->type = NF3DIR;
+        dwFlagsAndAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_FLAG_BACKUP_SEMANTICS;
+    }
+    else if (fileAttr & FILE_ATTRIBUTE_ARCHIVE) {
+        pAttr->type = NF3REG;
+        dwFlagsAndAttributes = FILE_ATTRIBUTE_ARCHIVE | FILE_FLAG_OVERLAPPED;
+    }
+    else if (fileAttr & FILE_ATTRIBUTE_NORMAL) {
+        pAttr->type = NF3REG;
+        dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED;
+    }
+    else {
+        pAttr->type = 0;
     }
 
-    pAttr->mode = 0;
-    
-    if ((data.st_mode & S_IREAD) != 0) {
-        pAttr->mode |= 0x124;
+    if (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT) {
+        pAttr->type = NF3LNK;
+		dwFlagsAndAttributes = FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS;
     }
-        
-    if ((data.st_mode & S_IWRITE) != 0) {
+
+	hFile = CreateFile(path, FILE_READ_EA, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFlagsAndAttributes, NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    GetFileInformationByHandle(hFile, &lpFileInformation);
+	CloseHandle(hFile);
+    pAttr->mode = 0;
+
+	// Set execution right for all
+    pAttr->mode |= 0x49;
+
+    // Set read right for all
+    pAttr->mode |= 0x124;
+
+    if ((lpFileInformation.dwFileAttributes & FILE_ATTRIBUTE_READONLY) == 0)
+    {
         pAttr->mode |= 0x92;
     }
-        
-    //if ((data.st_mode & S_IEXEC) != 0) {
-        pAttr->mode |= 0x49;
-    //}        
 
-    pAttr->nlink = data.st_nlink;
+    ULONGLONG fileSize = lpFileInformation.nFileSizeHigh;
+    fileSize <<= sizeof(lpFileInformation.nFileSizeHigh) * 8;
+    fileSize |= lpFileInformation.nFileSizeLow;
+
+    pAttr->nlink = lpFileInformation.nNumberOfLinks;
     pAttr->uid = m_nUID;
     pAttr->gid = m_nGID;
-    pAttr->size = data.st_size;
+    pAttr->size = fileSize;
     pAttr->used = pAttr->size;
     pAttr->rdev.specdata1 = 0;
     pAttr->rdev.specdata2 = 0;
     pAttr->fsid = 7; //NTFS //4; 
     pAttr->fileid = GetFileID(path);
-    pAttr->atime.seconds = data.st_atime;
+    pAttr->atime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastAccessTime);
     pAttr->atime.nseconds = 0;
-    pAttr->mtime.seconds = data.st_mtime;
+    pAttr->mtime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastWriteTime);
     pAttr->mtime.nseconds = 0;
-    pAttr->ctime.seconds = data.st_ctime;
+    pAttr->ctime.seconds = FileTimeToPOSIX(lpFileInformation.ftCreationTime);
     pAttr->ctime.nseconds = 0;
 
     return true;
+}
+
+LONGLONG CNFS3Prog::FileTimeToPOSIX(FILETIME ft)
+{
+    // takes the last modified date
+    LARGE_INTEGER date, adjust;
+    date.HighPart = ft.dwHighDateTime;
+    date.LowPart = ft.dwLowDateTime;
+
+    // 100-nanoseconds = milliseconds * 10000
+    adjust.QuadPart = 11644473600000 * 10000;
+
+    // removes the diff between 1970 and 1601
+    date.QuadPart -= adjust.QuadPart;
+
+    // converts back from 100-nanoseconds to seconds
+    return date.QuadPart / 10000000;
 }
