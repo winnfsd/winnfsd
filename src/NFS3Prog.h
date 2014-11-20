@@ -55,6 +55,17 @@ class filename3 : public opaque
     void Set(char *str);
 };
 
+class nfspath3 : public opaque
+{
+	public:
+	char *path;
+
+	nfspath3();
+	~nfspath3();
+	void SetSize(uint32 len);
+    void Set(char *str);
+};
+
 typedef struct
 {
     uint32 specdata1;
@@ -180,6 +191,38 @@ typedef struct
     createverf3 verf;
 } createhow3;
 
+typedef struct 
+{
+	sattr3 symlink_attributes;
+	nfspath3 symlink_data;
+} symlinkdata3;
+
+typedef struct _REPARSE_DATA_BUFFER {
+	ULONG  ReparseTag;
+	USHORT ReparseDataLength;
+	USHORT Reserved;
+	union {
+		struct {
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			ULONG  Flags;
+			WCHAR  PathBuffer[1];
+		} SymbolicLinkReparseBuffer;
+		struct {
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			WCHAR  PathBuffer[1];
+		} MountPointReparseBuffer;
+		struct {
+			UCHAR DataBuffer[1];
+		} GenericReparseBuffer;
+	};
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+
 class CNFS3Prog : public CRPCProg
 {
     public:
@@ -227,6 +270,7 @@ class CNFS3Prog : public CRPCProg
     void Read(opaque *pOpaque);
     void Read(nfstime3 *pTime);
     void Read(createhow3 *pHow);
+	void Read(symlinkdata3 *pSymlink);
     void Write(bool *pBool);
     void Write(uint32 *pUint32);
     void Write(uint64 *pUint64);

@@ -173,6 +173,28 @@ void filename3::Set(char *str)
     strcpy_s(name, (strlen(str) + 1), str);
 }
 
+nfspath3::nfspath3() : opaque()
+{
+    path = NULL;
+}
+
+nfspath3::~nfspath3()
+{
+}
+
+void nfspath3::SetSize(uint32 len)
+{
+    opaque::SetSize(len + 1);
+    length = len;
+    path = (char *)contents;
+}
+
+void nfspath3::Set(char *str)
+{
+    SetSize(strlen(str));
+    strcpy_s(path, (strlen(str) + 1), str);
+}
+
 typedef nfsstat3(CNFS3Prog::*PPROC)(void);
 
 CNFS3Prog::CNFS3Prog() : CRPCProg()
@@ -476,10 +498,74 @@ nfsstat3 CNFS3Prog::ProcedureACCESS(void)
 
 nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
 {
-    //TODO
     PrintLog("READLINK");
+    char *path;
+    post_op_attr symlink_attributes;
+    nfspath3 data = nfspath3();
 
-    return NFS3ERR_NOTSUPP;
+    //opaque data;
+    nfsstat3 stat;
+
+    HANDLE hFile;
+    REPARSE_DATA_BUFFER *lpOutBuffer;
+    lpOutBuffer = (REPARSE_DATA_BUFFER*)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+    DWORD bytesReturned;
+
+    path = GetPath();
+    stat = CheckFile(path);
+    if (stat == NFS3_OK) {
+
+        hFile = CreateFile(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
+
+        if (hFile == INVALID_HANDLE_VALUE) {
+            stat = NFS3ERR_IO;
+        }
+        else
+        {
+            lpOutBuffer = (REPARSE_DATA_BUFFER*)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+            if (!lpOutBuffer) {
+                stat = NFS3ERR_IO;
+            }
+            else {
+                DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, lpOutBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL);
+
+                if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+                {
+                    /*
+                    printf("Symbolic-Link\n");
+                    size_t slen = lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+                    WCHAR *szSubName = new WCHAR[slen + 1];
+                    wcsncpy_s(szSubName, slen + 1, &lpOutBuffer.SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR)], slen);
+                    szSubName[slen] = 0;
+                    delete[] szSubName;
+                    */
+
+                    size_t plen = lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
+                    WCHAR *szPrintName = new WCHAR[plen + 1];
+                    wcsncpy_s(szPrintName, plen + 1, &lpOutBuffer->SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)], plen);
+                    szPrintName[plen] = 0;
+                    char *pMBBuffer = (char *)malloc((plen + 1));
+                    size_t i;
+                    wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
+
+                    data.Set(pMBBuffer);
+                    free(pMBBuffer);
+                }
+                free(lpOutBuffer);
+            }
+        }
+        CloseHandle(hFile);
+    }
+
+    symlink_attributes.attributes_follow = GetFileAttributesForNFS(path, &symlink_attributes.attributes);
+
+    Write(&stat);
+    Write(&symlink_attributes);
+    if (stat == NFS3_OK) {
+        Write(&data);
+    }
+
+    return stat;
 }
 
 nfsstat3 CNFS3Prog::ProcedureREAD(void)
@@ -705,6 +791,12 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
 
 nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 {
+	diropargs3 where;
+	symlinkdata3 symlink;
+
+	Read(&where);
+	Read(&symlink);
+	
     //TODO
     PrintLog("SYMLINK");
 
@@ -1263,6 +1355,12 @@ void CNFS3Prog::Read(createhow3 *pHow)
     } else {
         Read(&pHow->verf);
     }       
+}
+
+void CNFS3Prog::Read(symlinkdata3 *pSymlink)
+{
+	Read(&pSymlink->symlink_attributes);
+	Read(&pSymlink->symlink_data);
 }
 
 void CNFS3Prog::Write(bool *pBool)
