@@ -216,6 +216,63 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
     }
 }
 
+bool CFileTable::RemoveItem(char *path) {
+	CACHE_LIST *pCurr;
+	FILE_ITEM *pItem;
+	unsigned int i, j, nPathLen;
+	FILE_TABLE *pTable;
+	int pItemIndex;
+
+	nPathLen = strlen(path);
+	pItem = NULL;
+
+	bool foundDeletedItem = false;
+
+	pCurr = m_pCacheList;
+
+	while (pCurr != NULL) { //search in cache
+		if (nPathLen == pCurr->pItem->nPathLen) { //comparing path length is faster than comparing path
+			if (strcmp(path, pCurr->pItem->path) == 0) { //compare path
+				pItem = pCurr->pItem;  //path matched
+				break;
+			}
+		}
+
+		pCurr = pCurr->pNext;
+	}
+
+
+	if (pItem != NULL) {
+		//TODO IMPLEMENTED CACHE RIGHT
+		//Remove item from cache
+	}
+
+	pTable = m_pFirstTable;
+
+	for (i = 0; i < m_nTableSize; i += TABLE_SIZE) { //search in file table
+		for (j = 0; j < TABLE_SIZE; j++) {
+			if (i + j >= m_nTableSize) { //all items in file table are compared
+				break;
+			}
+
+			if (!foundDeletedItem)
+			{
+				if (nPathLen == pTable->pItems[j].nPathLen) { //comparing path length is faster than comparing path
+					if (strcmp(path, pTable->pItems[j].path) == 0) { //compare path
+						foundDeletedItem = true;
+						memset(&(pTable->pItems[j]), 0, sizeof(FILE_ITEM));
+					}
+				}
+			}
+		}
+
+		pTable = pTable->pNext;
+	}
+	--m_nTableSize;
+
+	return foundDeletedItem;
+}
+
 bool FileExists(char *path)
 {
     int handle;
@@ -265,7 +322,13 @@ int RenameFile(char *pathFrom, char *pathTo)
     }
 }
 
+
+
 bool RemoveFile(char *path)
 {
-    return remove(path) == 0;
+	if (remove(path) == 0){
+		g_FileTable.RemoveItem(path);
+		return true;
+	}
+	return false;
 }

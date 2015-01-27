@@ -32,6 +32,7 @@ class CFileTable
     unsigned char *GetHandleByPath(char *path);
     char *GetPathByHandle(unsigned char *handle);
     FILE_ITEM *FindItemByPath(char *path);
+    bool RemoveItem(char *path);
 
     protected:
     FILE_ITEM *AddItem(char *path);
