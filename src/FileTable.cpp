@@ -1,6 +1,8 @@
 #include "FileTable.h"
 #include <string.h>
 #include <io.h>
+#include <stdio.h>
+#include <Windows.h>
 
 #define FHSIZE 32
 #define NFS3_FHSIZE 64
@@ -133,13 +135,13 @@ FILE_ITEM *CFileTable::AddItem(char *path)
     FILE_ITEM item;
     unsigned int nIndex;
 
-    item.path = new char[strlen(path) + 1];
-    strcpy_s(item.path, (strlen(path) + 1), path);  //path
-    item.nPathLen = strlen(item.path);  //path length
-    item.handle = new unsigned char[NFS3_FHSIZE];
-    memset(item.handle, 0, NFS3_FHSIZE * sizeof(unsigned char));
-    *(unsigned int *)item.handle = m_nTableSize;  //let its handle equal the index
-    item.bCached = false;  //not in the cache
+	item.path = new char[strlen(path) + 1];
+	strcpy_s(item.path, (strlen(path) + 1), path);  //path
+	item.nPathLen = strlen(item.path);  //path length
+	item.handle = new unsigned char[NFS3_FHSIZE];
+	memset(item.handle, 0, NFS3_FHSIZE * sizeof(unsigned char));
+	*(unsigned int *)item.handle = m_nTableSize;  //let its handle equal the index
+	item.bCached = false;  //not in the cache
 
     if (m_nTableSize > 0 && (m_nTableSize & (TABLE_SIZE - 1)) == 0) {
         m_pLastTable->pNext = new FILE_TABLE;
@@ -184,7 +186,8 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
             if (pItem == pCurr->pItem) {
                 if (pCurr == m_pCacheList) {  //at the first
                     return;
-                } else {  //move to the first
+                }
+                else {  //move to the first
                     pPrev->pNext = pCurr->pNext;
                     pCurr->pNext = m_pCacheList;
                     m_pCacheList = pCurr;
@@ -195,7 +198,8 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
             pPrev = pCurr;
             pCurr = pCurr->pNext;
         }
-    } else {
+    }
+    else {
         pItem->bCached = true;
 
         for (nCount = 0; nCount < 9 && pCurr != NULL; nCount++) { //seek to the end of the cache
@@ -206,7 +210,8 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
         if (nCount == 9 && pCurr != NULL) { //there are 10 items in the cache
             pPrev->pNext = NULL;  //remove the last
             pCurr->pItem->bCached = false;
-        } else {
+        }
+        else {
             pCurr = new CACHE_LIST;
         }
 
@@ -217,60 +222,64 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
 }
 
 bool CFileTable::RemoveItem(char *path) {
-	CACHE_LIST *pCurr;
-	FILE_ITEM *pItem;
-	unsigned int i, j, nPathLen;
-	FILE_TABLE *pTable;
-	int pItemIndex;
+    CACHE_LIST *pCurr;
+    FILE_ITEM *pItem;
+    unsigned int i, j, nPathLen;
+    FILE_TABLE *pTable;
+    int pItemIndex;
 
-	nPathLen = strlen(path);
-	pItem = NULL;
+    nPathLen = strlen(path);
+    pItem = NULL;
 
-	bool foundDeletedItem = false;
+    bool foundDeletedItem = false;
 
-	pCurr = m_pCacheList;
+    pCurr = m_pCacheList;
 
-	while (pCurr != NULL) { //search in cache
-		if (nPathLen == pCurr->pItem->nPathLen) { //comparing path length is faster than comparing path
-			if (strcmp(path, pCurr->pItem->path) == 0) { //compare path
-				pItem = pCurr->pItem;  //path matched
-				break;
-			}
-		}
+    while (pCurr != NULL) { //search in cache
+        if (nPathLen == pCurr->pItem->nPathLen) { //comparing path length is faster than comparing path
+            if (strcmp(path, pCurr->pItem->path) == 0) { //compare path
+                pItem = pCurr->pItem;  //path matched
+                break;
+            }
+        }
 
-		pCurr = pCurr->pNext;
-	}
+        pCurr = pCurr->pNext;
+    }
 
 
-	if (pItem != NULL) {
-		//TODO IMPLEMENTED CACHE RIGHT
-		//Remove item from cache
-	}
+    if (pItem != NULL) {
+        //TODO IMPLEMENTED CACHE RIGHT
+        //Remove item from cache
+    }
 
-	pTable = m_pFirstTable;
+    pTable = m_pFirstTable;
 
-	for (i = 0; i < m_nTableSize; i += TABLE_SIZE) { //search in file table
-		for (j = 0; j < TABLE_SIZE; j++) {
-			if (i + j >= m_nTableSize) { //all items in file table are compared
-				break;
-			}
+    for (i = 0; i < m_nTableSize; i += TABLE_SIZE) { //search in file table
+        for (j = 0; j < TABLE_SIZE; j++) {
+            if (i + j >= m_nTableSize) { //all items in file table are compared
+                break;
+            }
 
-			if (!foundDeletedItem)
-			{
-				if (nPathLen == pTable->pItems[j].nPathLen) { //comparing path length is faster than comparing path
-					if (strcmp(path, pTable->pItems[j].path) == 0) { //compare path
-						foundDeletedItem = true;
-						memset(&(pTable->pItems[j]), 0, sizeof(FILE_ITEM));
-					}
-				}
-			}
-		}
+            if (!foundDeletedItem)
+            {
+                if (nPathLen == pTable->pItems[j].nPathLen) { //comparing path length is faster than comparing path
+                    if (strcmp(path, pTable->pItems[j].path) == 0) { //compare path
+                        foundDeletedItem = true;
+                        memset(&(pTable->pItems[j]), 0, sizeof(FILE_ITEM));
+                    }
+                }
+            }
+        }
 
-		pTable = pTable->pNext;
-	}
-	--m_nTableSize;
+        pTable = pTable->pNext;
+    }
 
-	return foundDeletedItem;
+    if (foundDeletedItem) {
+		// we should not uncrement table size, because new file handle base on it
+        //--m_nTableSize;
+    }
+
+    return foundDeletedItem;
 }
 
 bool FileExists(char *path)
@@ -317,7 +326,8 @@ int RenameFile(char *pathFrom, char *pathTo)
         pItem->path = new char[pItem->nPathLen + 1];
         strcpy_s(pItem->path, (pItem->nPathLen + 1), pathTo);  //replace the path by new one
         return errorNumber;
-    } else {
+    }
+    else {
         return errorNumber;
     }
 }
@@ -326,9 +336,38 @@ int RenameFile(char *pathFrom, char *pathTo)
 
 bool RemoveFile(char *path)
 {
-	if (remove(path) == 0){
-		g_FileTable.RemoveItem(path);
-		return true;
-	}
-	return false;
+    if (remove(path) == 0){
+        g_FileTable.RemoveItem(path);
+        return true;
+    }
+    return false;
+}
+
+bool RemoveFolder(char *path)
+{
+    if (RemoveDirectory(path) != 0) {
+        g_FileTable.RemoveItem(path);
+        char* dotFile = "\\.";
+        char* backFile = "\\..";
+
+        char* dotDirectoryPath;
+        char* backDirectoryPath;
+        dotDirectoryPath = (char *)malloc(strlen(path) + 1 + 3);
+        strcpy_s(dotDirectoryPath, (strlen(path) + 1), path);
+        strcat_s(dotDirectoryPath, (strlen(path) + 5), dotFile);
+        backDirectoryPath = (char *)malloc(strlen(path) + 1 + 4);
+        strcpy_s(backDirectoryPath, (strlen(path) + 1), path);
+        strcat_s(backDirectoryPath, (strlen(path) + 6), backFile);
+
+        g_FileTable.RemoveItem(path);
+        g_FileTable.RemoveItem(dotDirectoryPath);
+        g_FileTable.RemoveItem(backDirectoryPath);
+        return true;
+    }
+    return false;
+}
+
+void RemovePathFromFileTable(char *path)
+{
+    g_FileTable.RemoveItem(path);
 }
