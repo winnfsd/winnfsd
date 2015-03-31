@@ -103,14 +103,12 @@ FILE_ITEM *CFileTable::FindItemByPath(char *path)
         for (i = 0; i < m_nTableSize; i += TABLE_SIZE) { //search in file table
             for (j = 0; j < TABLE_SIZE; j++) {
                 if (i + j >= m_nTableSize) { //all items in file table are compared
-                    //printf("not found %s \n", path);
                     return NULL;
                 }
 
                 if (nPathLen == pTable->pItems[j].nPathLen) { //comparing path length is faster than comparing path
                     if (strcmp(path, pTable->pItems[j].path) == 0) { //compare path
                         pItem = pTable->pItems + j;  //path matched
-                        //printf("found %s \n", path);
                         break;
                     }
                 }
@@ -137,13 +135,13 @@ FILE_ITEM *CFileTable::AddItem(char *path)
     FILE_ITEM item;
     unsigned int nIndex;
 
-    item.path = new char[strlen(path) + 1];
-    strcpy_s(item.path, (strlen(path) + 1), path);  //path
-    item.nPathLen = strlen(item.path);  //path length
-    item.handle = new unsigned char[NFS3_FHSIZE];
-    memset(item.handle, 0, NFS3_FHSIZE * sizeof(unsigned char));
-    *(unsigned int *)item.handle = m_nTableSize;  //let its handle equal the index
-    item.bCached = false;  //not in the cache
+	item.path = new char[strlen(path) + 1];
+	strcpy_s(item.path, (strlen(path) + 1), path);  //path
+	item.nPathLen = strlen(item.path);  //path length
+	item.handle = new unsigned char[NFS3_FHSIZE];
+	memset(item.handle, 0, NFS3_FHSIZE * sizeof(unsigned char));
+	*(unsigned int *)item.handle = m_nTableSize;  //let its handle equal the index
+	item.bCached = false;  //not in the cache
 
     if (m_nTableSize > 0 && (m_nTableSize & (TABLE_SIZE - 1)) == 0) {
         m_pLastTable->pNext = new FILE_TABLE;
@@ -171,8 +169,6 @@ FILE_ITEM *CFileTable::GetItemByID(unsigned int nID)
     for (i = TABLE_SIZE; i <= nID; i += TABLE_SIZE) {
         pTable = pTable->pNext;
     }
-
-    printf("%i %i", nID + TABLE_SIZE - i, nID);
 
     return pTable->pItems + nID + TABLE_SIZE - i;
 }
@@ -270,7 +266,6 @@ bool CFileTable::RemoveItem(char *path) {
                     if (strcmp(path, pTable->pItems[j].path) == 0) { //compare path
                         foundDeletedItem = true;
                         memset(&(pTable->pItems[j]), 0, sizeof(FILE_ITEM));
-                        printf("removed %s  i:%i j:%i nID:%i\n", path, i, j);
                     }
                 }
             }
@@ -280,7 +275,8 @@ bool CFileTable::RemoveItem(char *path) {
     }
 
     if (foundDeletedItem) {
-        --m_nTableSize;
+		// we should not uncrement table size, because new file handle base on it
+        //--m_nTableSize;
     }
 
     return foundDeletedItem;

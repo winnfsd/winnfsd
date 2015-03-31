@@ -1701,10 +1701,9 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
     // Set read right for all
     pAttr->mode |= 0x124;
 
-    if ((lpFileInformation.dwFileAttributes & FILE_ATTRIBUTE_READONLY) == 0)
-    {
+    //if ((lpFileInformation.dwFileAttributes & FILE_ATTRIBUTE_READONLY) == 0) {
         pAttr->mode |= 0x92;
-    }
+    //}
 
     ULONGLONG fileSize = lpFileInformation.nFileSizeHigh;
     fileSize <<= sizeof(lpFileInformation.nFileSizeHigh) * 8;
