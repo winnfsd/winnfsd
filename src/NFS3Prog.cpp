@@ -408,10 +408,10 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
                 nMode |= S_IREAD;
             }
 
-            if ((new_attributes.mode.mode & 0x80) != 0) {
+            //if ((new_attributes.mode.mode & 0x80) != 0) {
                 nMode |= S_IWRITE;
-            }
-
+            //}
+			printf("%i", nMode);
             /*if ((new_attributes.mode.mode & 0x40) != 0) {
                 nMode |= S_IEXEC;
             }*/
@@ -958,7 +958,7 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     
     if (FileExists(pathTo)) {
         //stat = NFS3ERR_EXIST;
-        remove(pathTo);
+		RemoveFile(pathTo);
     } 
     
     if (stat == NFS3_OK) {
