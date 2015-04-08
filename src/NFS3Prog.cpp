@@ -885,7 +885,7 @@ nfsstat3 CNFS3Prog::ProcedureREMOVE(void)
     if (stat == NFS3_OK) {
         DWORD fileAttr = GetFileAttributes(path);
         if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-            if (RemoveDirectory(path) == 0) {
+			if (RemoveFolder(path) == 0) {
                 stat = NFS3ERR_IO;
             }
         } else {
@@ -920,7 +920,7 @@ nfsstat3 CNFS3Prog::ProcedureRMDIR(void)
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
     if (stat == NFS3_OK) {
-        if (_rmdir(path) != 0) {
+        if (!RemoveFolder(path)) {
             stat = NFS3ERR_IO;
         }         
     }
@@ -957,12 +957,21 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     todir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirToName.c_str(), &todir_wcc.before.attributes);
     
     if (FileExists(pathTo)) {
-        //stat = NFS3ERR_EXIST;
-		RemoveFile(pathTo);
+		DWORD fileAttr = GetFileAttributes(pathTo);
+		if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
+			if (RemoveFolder(pathTo) == 0) {
+				stat = NFS3ERR_IO;
+			}
+		}
+		else {
+			if (!RemoveFile(pathTo)) {
+				stat = NFS3ERR_IO;
+			}
+		}
     } 
     
     if (stat == NFS3_OK) {
-        errno_t errorNumber = RenameFile(pathFrom, pathTo);
+        errno_t errorNumber = RenameDirectory(pathFrom, pathTo);
 
         if (errorNumber != 0) {
             char buffer[BUFFER_SIZE];

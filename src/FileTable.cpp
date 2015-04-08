@@ -282,6 +282,22 @@ bool CFileTable::RemoveItem(char *path) {
     return foundDeletedItem;
 }
 
+void CFileTable::RenameFile(char *pathFrom, char* pathTo)
+{
+	FILE_ITEM *pItem;
+
+	pItem = g_FileTable.FindItemByPath(pathFrom);
+	if (pathFrom)
+
+	if (pItem == NULL) {
+	} else {
+		delete[] pItem->path;
+		pItem->nPathLen = strlen(pathTo);
+		pItem->path = new char[pItem->nPathLen + 1];
+		strcpy_s(pItem->path, (pItem->nPathLen + 1), pathTo);  //replace the path by new one
+	}
+}
+
 bool FileExists(char *path)
 {
     int handle;
@@ -321,10 +337,7 @@ int RenameFile(char *pathFrom, char *pathTo)
     errno_t errorNumber = rename(pathFrom, pathTo);
 
     if (errorNumber == 0) { //success
-        delete[] pItem->path;
-        pItem->nPathLen = strlen(pathTo);
-        pItem->path = new char[pItem->nPathLen + 1];
-        strcpy_s(pItem->path, (pItem->nPathLen + 1), pathTo);  //replace the path by new one
+		g_FileTable.RenameFile(pathFrom, pathTo);
         return errorNumber;
     }
     else {
@@ -332,7 +345,39 @@ int RenameFile(char *pathFrom, char *pathTo)
     }
 }
 
+int RenameDirectory(char *pathFrom, char *pathTo)
+{
+	errno_t errorNumber = RenameFile(pathFrom, pathTo);
 
+	char* dotFile = "\\.";
+	char* backFile = "\\..";
+
+	char* dotDirectoryPathFrom;
+	char* dotDirectoryPathTo;
+	char* backDirectoryPathFrom;
+	char* backDirectoryPathTo;
+	dotDirectoryPathFrom = (char *)malloc(strlen(pathFrom) + 1 + 3);
+	strcpy_s(dotDirectoryPathFrom, (strlen(pathFrom) + 1), pathFrom);
+	strcat_s(dotDirectoryPathFrom, (strlen(pathFrom) + 5), dotFile);
+
+	dotDirectoryPathTo = (char *)malloc(strlen(pathTo) + 1 + 3);
+	strcpy_s(dotDirectoryPathTo, (strlen(pathTo) + 1), pathTo);
+	strcat_s(dotDirectoryPathTo, (strlen(pathTo) + 5), dotFile);
+
+	backDirectoryPathFrom = (char *)malloc(strlen(pathFrom) + 1 + 4);
+	strcpy_s(backDirectoryPathFrom, (strlen(pathFrom) + 1), pathFrom);
+	strcat_s(backDirectoryPathFrom, (strlen(pathFrom) + 6), backFile);
+
+	backDirectoryPathTo = (char *)malloc(strlen(pathTo) + 1 + 4);
+	strcpy_s(backDirectoryPathTo, (strlen(pathTo) + 1), pathTo);
+	strcat_s(backDirectoryPathTo, (strlen(pathTo) + 6), backFile);
+
+	g_FileTable.RenameFile(dotDirectoryPathFrom, dotDirectoryPathTo);
+	g_FileTable.RenameFile(backDirectoryPathFrom, backDirectoryPathTo);
+	return errorNumber;
+
+
+}
 
 bool RemoveFile(char *path)
 {
@@ -359,7 +404,6 @@ bool RemoveFolder(char *path)
         strcpy_s(backDirectoryPath, (strlen(path) + 1), path);
         strcat_s(backDirectoryPath, (strlen(path) + 6), backFile);
 
-        g_FileTable.RemoveItem(path);
         g_FileTable.RemoveItem(dotDirectoryPath);
         g_FileTable.RemoveItem(backDirectoryPath);
         return true;

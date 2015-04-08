@@ -33,6 +33,7 @@ class CFileTable
     char *GetPathByHandle(unsigned char *handle);
     FILE_ITEM *FindItemByPath(char *path);
     bool RemoveItem(char *path);
+	void RenameFile(char *pathFrom, char *pathTo);
 
     protected:
     FILE_ITEM *AddItem(char *path);
@@ -44,6 +45,7 @@ class CFileTable
 
     FILE_ITEM *GetItemByID(unsigned int nID);
     void PutItemInCache(FILE_ITEM *pItem);
+
 };
 
 extern bool FileExists(char *path);
@@ -51,6 +53,8 @@ extern unsigned long GetFileID(char *path);
 extern unsigned char *GetFileHandle(char *path);
 extern char *GetFilePath(unsigned char *handle);
 extern int RenameFile(char *pathFrom, char *pathTo);
+extern int RenameDirectory(char *pathFrom, char *pathTo);
+extern bool RemoveFolder(char *path);
 extern bool RemoveFile(char *path);
 
 #endif
