@@ -3,6 +3,7 @@
 #include <io.h>
 #include <stdio.h>
 #include <Windows.h>
+#include <sys/stat.h>
 
 #define FHSIZE 32
 #define NFS3_FHSIZE 64
@@ -287,7 +288,6 @@ void CFileTable::RenameFile(char *pathFrom, char* pathTo)
 	FILE_ITEM *pItem;
 
 	pItem = g_FileTable.FindItemByPath(pathFrom);
-	if (pathFrom)
 
 	if (pItem == NULL) {
 	} else {
@@ -381,6 +381,11 @@ int RenameDirectory(char *pathFrom, char *pathTo)
 
 bool RemoveFile(char *path)
 {
+	int nMode = 0;
+	nMode |= S_IREAD;
+	nMode |= S_IWRITE;
+	_chmod(path, nMode);
+
     if (remove(path) == 0){
         g_FileTable.RemoveItem(path);
         return true;
@@ -390,6 +395,11 @@ bool RemoveFile(char *path)
 
 bool RemoveFolder(char *path)
 {
+	int nMode = 0;
+	nMode |= S_IREAD;
+	nMode |= S_IWRITE;
+	_chmod(path, nMode);
+
     if (RemoveDirectory(path) != 0) {
         g_FileTable.RemoveItem(path);
         char* dotFile = "\\.";
