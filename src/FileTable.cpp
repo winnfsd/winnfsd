@@ -4,12 +4,16 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <sys/stat.h>
+#include "tree.hh"
 
 #define FHSIZE 32
 #define NFS3_FHSIZE 64
 
 static CFileTable g_FileTable;
-
+/* New impl */
+static tree<FILE_ITEM> filesTree;
+static tree<FILE_ITEM>::iterator topNode;
+/* End */
 CFileTable::CFileTable()
 {
     m_pLastTable = m_pFirstTable = new FILE_TABLE;
@@ -152,7 +156,24 @@ FILE_ITEM *CFileTable::AddItem(char *path)
 
     m_pLastTable->pItems[nIndex = m_nTableSize & (TABLE_SIZE - 1)] = item;  //add the new item in the file table
     ++m_nTableSize;
-
+	
+	/* New implem */
+	FILE_ITEM item2 = item;
+	if (filesTree.empty()) {
+		filesTree.set_head(item2);
+		topNode = filesTree.begin();
+	} else {
+		std::string sPath(path);
+		tree<FILE_ITEM>::iterator parentNode = findParentNodeFromRootForPath(path);
+		std::string splittedPath = sPath.substr(sPath.find_last_of('\\') + 1);
+		item2.path = new char[splittedPath.length() + 1];
+		strcpy_s(item2.path, (splittedPath.length() + 1), splittedPath.c_str());
+		if (parentNode != NULL) {
+			filesTree.append_child(parentNode, item2);
+		}
+	}
+	//DisplayTree(topNode, 0);
+	/* end */
     return m_pLastTable->pItems + nIndex;  //return the pointer to the new item
 }
 
@@ -298,6 +319,56 @@ void CFileTable::RenameFile(char *pathFrom, char* pathTo)
 	}
 }
 
+/* New impl */
+tree<FILE_ITEM>::iterator CFileTable::findNodeFromRootWithPath(char *path)
+{
+	std::string sPath(path);
+	std::string splittedString = sPath.substr(strlen(topNode->path) + 1);
+	return findNodeWithPathFromNode(splittedString, topNode);
+}
+
+tree<FILE_ITEM>::iterator CFileTable::findNodeWithPathFromNode(std::string path, tree<FILE_ITEM>::iterator node)
+{
+	tree<FILE_ITEM>::iterator sib = filesTree.begin(node);
+	tree<FILE_ITEM>::iterator end = filesTree.end(node);
+	bool currentLevel = true;
+
+	std::string currentPath = path.substr(0, path.find('\\'));
+	size_t position = path.find('\\');
+	std::string followingPath("");
+	if (position != std::string::npos) {
+		followingPath = path.substr(path.find('\\') + 1);
+		currentLevel = false;
+	}
+
+	while (sib != end) {
+		if (strcmp(sib->path, currentPath.c_str()) == 0) {
+			if (currentLevel) {
+				return sib;
+			}
+			else {
+				return findNodeWithPathFromNode(followingPath, sib);
+			}
+		}
+		++sib;
+	}
+	return NULL;
+}
+
+tree<FILE_ITEM>::iterator CFileTable::findParentNodeFromRootForPath(char *path) {
+	std::string sPath(path);
+	std::string currentPath = sPath.substr(strlen(topNode->path) + 1);
+	size_t position = currentPath.find('\\');
+	std::string followingPath("");
+	if (position == std::string::npos) {
+		return topNode;
+	} else {
+		followingPath = currentPath.substr(0, currentPath.find_last_of('\\'));
+		return findNodeWithPathFromNode(followingPath, topNode);
+	}
+}
+/* end */
+
 bool FileExists(char *path)
 {
     int handle;
@@ -424,4 +495,16 @@ bool RemoveFolder(char *path)
 void RemovePathFromFileTable(char *path)
 {
     g_FileTable.RemoveItem(path);
+}
+
+void DisplayTree(tree<FILE_ITEM>::iterator node, int level)
+{
+	tree<FILE_ITEM>::iterator sib2 = filesTree.begin(node);
+	tree<FILE_ITEM>::iterator end2 = filesTree.end(node);
+	while (sib2 != end2) {
+		for (int i = 0; i < filesTree.depth(sib2) - 2; ++i)
+			printf(" ");
+		printf("%s \n", sib2->path);
+		++sib2;
+	}
 }
