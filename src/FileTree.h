@@ -7,6 +7,7 @@ class CFileTree
 {
 	public:
 		FILE_ITEM AddItem(char *absolutePath, unsigned char *handle);
+		void RemoveItem(char *absolutePath);
 		
 	protected:
 		tree<FILE_ITEM>::iterator findNodeFromRootWithPath(char *path);

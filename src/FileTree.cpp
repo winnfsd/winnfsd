@@ -42,6 +42,20 @@ FILE_ITEM CFileTree::AddItem(char *absolutePath, unsigned char* handle)
 	return item;
 }
 
+void CFileTree::RemoveItem(char *absolutePath)
+{
+	tree<FILE_ITEM>::iterator node = findNodeFromRootWithPath(absolutePath);
+	if (node != NULL) {
+		filesTree.erase(node);
+	}
+	else {
+		printf("do not find node to delete : %s", absolutePath);
+	}
+	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<DISPLAY tree \n\n\n");
+	DisplayTree(topNode, 0);
+	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<End tree \n\n\n");
+}
+
 tree<FILE_ITEM>::iterator CFileTree::findNodeFromRootWithPath(char *path)
 {
 	std::string sPath(path);

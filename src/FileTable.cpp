@@ -284,7 +284,7 @@ bool CFileTable::RemoveItem(char *path) {
 		// we should not uncrement table size, because new file handle base on it
         //--m_nTableSize;
     }
-
+	g_FileTree.RemoveItem(path);
     return foundDeletedItem;
 }
 
