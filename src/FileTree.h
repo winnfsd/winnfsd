@@ -8,12 +8,13 @@ class CFileTree
 	public:
 		FILE_ITEM AddItem(char *absolutePath, unsigned char *handle);
 		void RemoveItem(char *absolutePath);
+		void RenameItem(char *absolutePathFrom, char *absolutePathTo);
 		
 	protected:
-		tree<FILE_ITEM>::iterator findNodeFromRootWithPath(char *path);
-		tree<FILE_ITEM>::iterator findNodeWithPathFromNode(std::string path, tree<FILE_ITEM>::iterator node);
-		tree<FILE_ITEM>::iterator findParentNodeFromRootForPath(char *path);
+		tree_node_<FILE_ITEM>* findNodeFromRootWithPath(char *path);
+		tree_node_<FILE_ITEM>* findNodeWithPathFromNode(std::string path, tree_node_<FILE_ITEM>* node);
+		tree_node_<FILE_ITEM>* findParentNodeFromRootForPath(char *path);
 };
-extern void DisplayTree(tree<FILE_ITEM>::iterator node, int level);
+extern void DisplayTree(tree_node_<FILE_ITEM>* node, int level);
 
 #endif
