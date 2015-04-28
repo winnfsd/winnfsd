@@ -9,6 +9,8 @@ class CFileTree
 		FILE_ITEM AddItem(char *absolutePath, unsigned char *handle);
 		void RemoveItem(char *absolutePath);
 		void RenameItem(char *absolutePathFrom, char *absolutePathTo);
+
+		FILE_ITEM* FindFileItemForPath(char *absolutePath);
 		
 	protected:
 		tree_node_<FILE_ITEM>* findNodeFromRootWithPath(char *path);

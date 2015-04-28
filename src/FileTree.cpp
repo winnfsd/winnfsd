@@ -84,9 +84,21 @@ void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
 	
 }
 
+FILE_ITEM* CFileTree::FindFileItemForPath(char *absolutePath)
+{
+	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePath);
+	return &(node->data);
+}
+
+
+
+
 tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 {
 	std::string sPath(path);
+	if (sPath == std::string(topNode->path)) {
+		return topNode.node;
+	}
 	std::string splittedString = sPath.substr(strlen(topNode->path) + 1);
 	return findNodeWithPathFromNode(splittedString, topNode.node);
 }
