@@ -301,6 +301,8 @@ void CFileTable::RenameFile(char *pathFrom, char* pathTo)
 		pItem->path = new char[pItem->nPathLen + 1];
 		strcpy_s(pItem->path, (pItem->nPathLen + 1), pathTo);  //replace the path by new one
 	}
+
+	g_FileTree.RenameItem(pathFrom, pathTo);
 }
 
 bool FileExists(char *path)

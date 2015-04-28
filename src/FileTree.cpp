@@ -62,11 +62,14 @@ void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
 	tree_node_<FILE_ITEM>* parentNode = findParentNodeFromRootForPath(absolutePathTo);
 
 	if (parentNode != NULL && node != NULL) {
+		if (filesTree.number_of_children(parentNode) < 1) {
+			FILE_ITEM emptyItem;
+			emptyItem.nPathLen = 0;
+			emptyItem.path = "";
+			filesTree.append_child(tree<FILE_ITEM>::iterator_base(parentNode), emptyItem);
+		}
 		tree<FILE_ITEM>::iterator firstChild = filesTree.begin(parentNode);
-		tree<FILE_ITEM>::iterator endChild = filesTree.end(parentNode);
-		// must be tested
-		//filesTree.move_after(firstChild, node);
-		//filesTree.reparent(parentNode, node, node);
+		filesTree.move_after(firstChild, tree<FILE_ITEM>::iterator(node));
 
 		std::string sPath(absolutePathTo);
 		std::string splittedPath = sPath.substr(sPath.find_last_of('\\') + 1);
