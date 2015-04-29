@@ -81,7 +81,6 @@ char *CFileTable::GetPathByHandle(unsigned char *handle)
 	id = *(unsigned int *)handle;
 	node = GetItemByID(id);
 	if (node != NULL) {
-		printf("%s => %i\n", node->data.path, id);
 		return g_FileTree.GetNodeFullPath(node);
 	}
 	else {

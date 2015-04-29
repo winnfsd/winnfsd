@@ -6,6 +6,7 @@
 class CFileTree
 {
 	public:
+		bool static const debug = false;
 		FILE_ITEM AddItem(char *absolutePath, unsigned char *handle);
 		void RemoveItem(char *absolutePath);
 		void RenameItem(char *absolutePathFrom, char *absolutePathTo);

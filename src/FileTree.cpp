@@ -35,9 +35,7 @@ FILE_ITEM CFileTree::AddItem(char *absolutePath, unsigned char* handle)
 		}
 	}
 
-	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<DISPLAY tree \n\n\n");
 	DisplayTree(topNode.node, 0);
-	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<End tree \n\n\n");
 
 	return item;
 }
@@ -48,12 +46,8 @@ void CFileTree::RemoveItem(char *absolutePath)
 	if (node != NULL) {
 		filesTree.erase(node);
 	}
-	else {
-		printf("do not find node to delete : %s", absolutePath);
-	}
-	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<DISPLAY tree \n\n\n");
+
 	DisplayTree(topNode.node, 0);
-	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<End tree \n\n\n");
 }
 
 void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
@@ -77,15 +71,9 @@ void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
 		strcpy_s(node->data.path, (splittedPath.length() + 1), splittedPath.c_str());
 
 	}
-
-	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<DISPLAY tree \n\n\n");
 	DisplayTree(topNode.node, 0);
-	printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<End tree \n\n\n");
-	
 }
 
-
-//TODO : change return to node
 tree_node_<FILE_ITEM>* CFileTree::FindFileItemForPath(char *absolutePath)
 {
 	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePath);
@@ -94,9 +82,6 @@ tree_node_<FILE_ITEM>* CFileTree::FindFileItemForPath(char *absolutePath)
 	}
 	return node;
 }
-
-
-
 
 tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 {
@@ -164,7 +149,6 @@ char* CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
 		path.insert(0, node->data.path);
 		node = node->parent;
 	}
-	printf("%s\n", path.c_str());
 
 	// TODO : Memory leak
 	char *cstr = new char[path.length() + 1];
@@ -174,16 +158,19 @@ char* CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
 
 void DisplayTree(tree_node_<FILE_ITEM>* node, int level)
 {
-	tree<FILE_ITEM>::sibling_iterator  sib2 = filesTree.begin(node);
-	tree<FILE_ITEM>::sibling_iterator  end2 = filesTree.end(node);
-	while (sib2 != end2) {
-		for (int i = 0; i < level; i++) {
-			printf("  ");
+	if (CFileTree::debug) {
+		printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<DISPLAY tree \n\n\n");
+		tree<FILE_ITEM>::sibling_iterator  sib2 = filesTree.begin(node);
+		tree<FILE_ITEM>::sibling_iterator  end2 = filesTree.end(node);
+		while (sib2 != end2) {
+			for (int i = 0; i < level; i++) {
+				printf("  ");
+			}
+			if (tree<FILE_ITEM>::number_of_children(sib2) > 1) {
+				DisplayTree(sib2.node, (level + 1));
+			}
+			++sib2;
 		}
-		printf("(l.%i) %s\n", level, sib2->path);
-		if (tree<FILE_ITEM>::number_of_children(sib2) > 1) {
-			DisplayTree(sib2.node, (level + 1));
-		}
-		++sib2;
+		printf("\n\n\n<<<<<<<<<<<<<<<<<<<<<End tree \n\n\n");
 	}
 }
