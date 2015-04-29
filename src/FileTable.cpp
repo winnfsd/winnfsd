@@ -31,8 +31,8 @@ CFileTable::~CFileTable()
 
     while (pTable != NULL) { //free file table
         for (i = 0; i < TABLE_SIZE; i++) {
-            delete[] pTable->pItems[i].handle;
-            delete[] pTable->pItems[i].path;
+            delete[] pTable->pItems[i];
+            delete[] pTable->pItems[i];
         }
 
         pTemp = pTable;
@@ -52,36 +52,49 @@ unsigned long CFileTable::GetIDByPath(char *path)
     unsigned char *handle;
 
     handle = GetHandleByPath(path);
+
     return *(unsigned long *)handle;
 }
 
 unsigned char *CFileTable::GetHandleByPath(char *path)
 {
-    FILE_ITEM *pItem;
+	tree_node_<FILE_ITEM> *node;
 
-    pItem = FindItemByPath(path);
+	node = g_FileTree.FindFileItemForPath(path);
 
-    if (pItem == NULL) {
-        pItem = AddItem(path);
+	if (node == NULL) {
+        AddItem(path);
+		node = g_FileTree.FindFileItemForPath(path);
     }
+	if (node == NULL) {
+		return NULL;
+	}
 
-    return pItem->handle;
+	return node->data.handle;
 }
 
 char *CFileTable::GetPathByHandle(unsigned char *handle)
 {
-    unsigned int id;
-    FILE_ITEM *pItem;
+	unsigned int id;
+	tree_node_<FILE_ITEM>* node;
 
-    id = *(unsigned int *)handle;
-    pItem = GetItemByID(id);
-    return pItem == NULL ? NULL : pItem->path;
+	id = *(unsigned int *)handle;
+	node = GetItemByID(id);
+	if (node != NULL) {
+		printf("%s => %i\n", node->data.path, id);
+		return g_FileTree.GetNodeFullPath(node);
+	}
+	else {
+		return NULL;
+	}
+    //return pItem == NULL ? NULL : pItem->path;
 }
 
-FILE_ITEM *CFileTable::FindItemByPath(char *path)
+tree_node_<FILE_ITEM>* CFileTable::FindItemByPath(char *path)
 {
+	tree_node_<FILE_ITEM>* node= NULL;/*
     CACHE_LIST *pCurr;
-    FILE_ITEM *pItem;
+
     unsigned int i, j, nPathLen;
     FILE_TABLE *pTable;
 
@@ -130,13 +143,14 @@ FILE_ITEM *CFileTable::FindItemByPath(char *path)
         //TODO IMPLEMENTED CACHE RIGHT
         //PutItemInCache(pItem);  //put the found item in cache
     }
-
-    return pItem;
+	*/
+	return node;
 }
 
-FILE_ITEM *CFileTable::AddItem(char *path)
+tree_node_<FILE_ITEM>* CFileTable::AddItem(char *path)
 {
     FILE_ITEM item;
+	tree_node_<FILE_ITEM>* node;
     unsigned int nIndex;
 
 	item.path = new char[strlen(path) + 1];
@@ -153,30 +167,41 @@ FILE_ITEM *CFileTable::AddItem(char *path)
         memset(m_pLastTable, 0, sizeof(FILE_TABLE));
     }
 
-    m_pLastTable->pItems[nIndex = m_nTableSize & (TABLE_SIZE - 1)] = item;  //add the new item in the file table
+	g_FileTree.AddItem(path, item.handle);
+	node = g_FileTree.FindFileItemForPath(path);
+
+	m_pLastTable->pItems[nIndex = m_nTableSize & (TABLE_SIZE - 1)] = node;  //add the new item in the file table
     ++m_nTableSize;
 	
-	g_FileTree.AddItem(path, item.handle);
 
-    return m_pLastTable->pItems + nIndex;  //return the pointer to the new item
+
+
+
+
+
+
+
+
+
+	return node;  //return the pointer to the new item
 }
 
-FILE_ITEM *CFileTable::GetItemByID(unsigned int nID)
+tree_node_<FILE_ITEM>* CFileTable::GetItemByID(unsigned int nID)
 {
-    FILE_TABLE *pTable;
-    unsigned int i;
+	FILE_TABLE *pTable;
+	unsigned int i;
 
-    if (nID >= m_nTableSize) {
-        return NULL;
-    }
+	if (nID >= m_nTableSize) {
+		return NULL;
+	}
 
-    pTable = m_pFirstTable;
+	pTable = m_pFirstTable;
 
-    for (i = TABLE_SIZE; i <= nID; i += TABLE_SIZE) {
-        pTable = pTable->pNext;
-    }
+	for (i = TABLE_SIZE; i <= nID; i += TABLE_SIZE) {
+		pTable = pTable->pNext;
+	}
 
-    return pTable->pItems + nID + TABLE_SIZE - i;
+	return pTable->pItems[nID + TABLE_SIZE - i];
 }
 
 void CFileTable::PutItemInCache(FILE_ITEM *pItem)
@@ -228,7 +253,7 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
 }
 
 bool CFileTable::RemoveItem(char *path) {
-    CACHE_LIST *pCurr;
+   /* CACHE_LIST *pCurr;
     FILE_ITEM *pItem;
     unsigned int i, j, nPathLen;
     FILE_TABLE *pTable;
@@ -283,14 +308,16 @@ bool CFileTable::RemoveItem(char *path) {
     if (foundDeletedItem) {
 		// we should not uncrement table size, because new file handle base on it
         //--m_nTableSize;
-    }
+    }*/
+	tree_node_<FILE_ITEM>* foundDeletedItem;
+	foundDeletedItem = g_FileTree.FindFileItemForPath(path);
 	g_FileTree.RemoveItem(path);
     return foundDeletedItem;
 }
 
 void CFileTable::RenameFile(char *pathFrom, char* pathTo)
 {
-	FILE_ITEM *pItem;
+	/*FILE_ITEM *pItem;
 
 	pItem = g_FileTable.FindItemByPath(pathFrom);
 
@@ -301,7 +328,7 @@ void CFileTable::RenameFile(char *pathFrom, char* pathTo)
 		pItem->path = new char[pItem->nPathLen + 1];
 		strcpy_s(pItem->path, (pItem->nPathLen + 1), pathTo);  //replace the path by new one
 	}
-
+	*/
 	g_FileTree.RenameItem(pathFrom, pathTo);
 }
 
@@ -333,9 +360,11 @@ char *GetFilePath(unsigned char *handle)
 
 int RenameFile(char *pathFrom, char *pathTo)
 {
+	tree_node_<FILE_ITEM>* node;
     FILE_ITEM *pItem;
 
-    pItem = g_FileTable.FindItemByPath(pathFrom);
+	node = g_FileTable.FindItemByPath(pathFrom);
+    pItem = &(node->data);
 
     if (pItem == NULL) {
         return false;

@@ -84,10 +84,15 @@ void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
 	
 }
 
-FILE_ITEM* CFileTree::FindFileItemForPath(char *absolutePath)
+
+//TODO : change return to node
+tree_node_<FILE_ITEM>* CFileTree::FindFileItemForPath(char *absolutePath)
 {
 	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePath);
-	return &(node->data);
+	if (node == NULL) {
+		return NULL;
+	}
+	return node;
 }
 
 
@@ -95,6 +100,9 @@ FILE_ITEM* CFileTree::FindFileItemForPath(char *absolutePath)
 
 tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 {
+	if (topNode.node == NULL){
+		return NULL;
+	}
 	std::string sPath(path);
 	if (sPath == std::string(topNode->path)) {
 		return topNode.node;
@@ -145,6 +153,24 @@ tree_node_<FILE_ITEM>* CFileTree::findParentNodeFromRootForPath(char *path) {
 	}
 }
 
+char* CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
+{
+	std::string path;
+	path.append(node->data.path);
+	node = node->parent;
+	while (node != NULL)
+	{
+		path.insert(0, "\\");
+		path.insert(0, node->data.path);
+		node = node->parent;
+	}
+	printf("%s\n", path.c_str());
+
+	// TODO : Memory leak
+	char *cstr = new char[path.length() + 1];
+	strcpy_s(cstr, path.length() + 1, path.c_str());
+	return cstr;
+}
 
 void DisplayTree(tree_node_<FILE_ITEM>* node, int level)
 {

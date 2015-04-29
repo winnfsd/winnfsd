@@ -15,7 +15,7 @@ typedef struct
 
 typedef struct _FILE_TABLE
 {
-    FILE_ITEM pItems[TABLE_SIZE];
+	 tree_node_<FILE_ITEM>* pItems[TABLE_SIZE];
     _FILE_TABLE *pNext;
 } FILE_TABLE;
 
@@ -33,19 +33,19 @@ class CFileTable
     unsigned long GetIDByPath(char *path);
     unsigned char *GetHandleByPath(char *path);
     char *GetPathByHandle(unsigned char *handle);
-    FILE_ITEM *FindItemByPath(char *path);
+	tree_node_<FILE_ITEM>* FindItemByPath(char *path);
     bool RemoveItem(char *path);
 	void RenameFile(char *pathFrom, char *pathTo);
 
     protected:
-    FILE_ITEM *AddItem(char *path);
+		tree_node_<FILE_ITEM>* AddItem(char *path);
 
     private:
     FILE_TABLE *m_pFirstTable, *m_pLastTable;
     unsigned int m_nTableSize;
     CACHE_LIST *m_pCacheList;
 
-    FILE_ITEM *GetItemByID(unsigned int nID);
+	tree_node_<FILE_ITEM>* GetItemByID(unsigned int nID);
     void PutItemInCache(FILE_ITEM *pItem);
 
 };
