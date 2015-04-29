@@ -310,7 +310,9 @@ bool CFileTable::RemoveItem(char *path) {
     }*/
 	tree_node_<FILE_ITEM>* foundDeletedItem;
 	foundDeletedItem = g_FileTree.FindFileItemForPath(path);
-	g_FileTree.RemoveItem(path);
+	if (foundDeletedItem != NULL) {
+		g_FileTree.RemoveItem(g_FileTree.GetNodeFullPath(foundDeletedItem));
+	}
     return foundDeletedItem;
 }
 
