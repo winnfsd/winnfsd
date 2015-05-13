@@ -32,6 +32,8 @@ FILE_ITEM CFileTree::AddItem(char *absolutePath, unsigned char* handle)
 		strcpy_s(item.path, (splittedPath.length() + 1), splittedPath.c_str());
 		if (parentNode) {
 			filesTree.append_child(tree<FILE_ITEM>::iterator_base(parentNode), item);
+		} else {
+			//printf("Parent node found for %s", absolutePath);
 		}
 	}
 
@@ -42,9 +44,12 @@ FILE_ITEM CFileTree::AddItem(char *absolutePath, unsigned char* handle)
 
 void CFileTree::RemoveItem(char *absolutePath)
 {
-	tree<FILE_ITEM>::iterator node = findNodeFromRootWithPath(absolutePath);
+	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePath);
 	if (node != NULL) {
-		filesTree.erase(node);
+		filesTree.erase(tree<FILE_ITEM>::iterator(node));
+	}
+	else {
+		//printf("Do not find node for path : %s\n", absolutePath);
 	}
 
 	DisplayTree(topNode.node, 0);
@@ -98,8 +103,8 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 
 tree_node_<FILE_ITEM>* CFileTree::findNodeWithPathFromNode(std::string path, tree_node_<FILE_ITEM>* node)
 {
-	tree<FILE_ITEM>::iterator sib = filesTree.begin(node);
-	tree<FILE_ITEM>::iterator end = filesTree.end(node);
+	tree<FILE_ITEM>::sibling_iterator sib = filesTree.begin(node);
+	tree<FILE_ITEM>::sibling_iterator end = filesTree.end(node);
 	bool currentLevel = true;
 
 	std::string currentPath = path.substr(0, path.find('\\'));
