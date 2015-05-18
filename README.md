@@ -25,6 +25,7 @@ Usage
     Copyright (C) 2005 Ming-Yang Kao
     Edited in 2011 by ZeWaren
     Edited in 2013 by Alexander Schneider (Jankowfsky AG)
+    Edited in 2014 2015 by Yann Schepens
     =====================================================
 
     Usage: WinNFSd.exe [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [export path] [alias path]

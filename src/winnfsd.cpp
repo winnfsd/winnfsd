@@ -61,6 +61,7 @@ static void printAbout(void)
     printf("Copyright (C) 2005 Ming-Yang Kao\n");
     printf("Edited in 2011 by ZeWaren\n");
     printf("Edited in 2013 by Alexander Schneider (Jankowfsky AG)\n");
+	printf("Edited in 2014 2015 by Yann Schepens\n");
     printLine();
 }
 

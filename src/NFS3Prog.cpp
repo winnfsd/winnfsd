@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string>
 #include <Windows.h>
+#include <time.h>
 #define BUFFER_SIZE 1000
 
 enum
@@ -227,7 +228,13 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
 
     nfsstat3 stat;
 
-    PrintLog("NFS ");
+	struct tm current;
+	time_t now;
+
+	time(&now);
+	localtime_s(&current, &now);
+
+	PrintLog("[%i:%i:%i] NFS ", current.tm_hour, current.tm_min, current.tm_sec);
 
     if (pParam->nProc >= sizeof(pf) / sizeof(PPROC)) {
         ProcedureNOIMP();
@@ -366,7 +373,7 @@ nfsstat3 CNFS3Prog::ProcedureGETATTR(void)
     PrintLog("GETATTR");
     path = GetPath();
     stat = CheckFile(path);
-
+	//printf("\nscanned file %s\n", path);
     if (stat == NFS3ERR_NOENT) {
         stat = NFS3ERR_STALE;
     } else if (stat == NFS3_OK) {
@@ -411,7 +418,7 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
             //if ((new_attributes.mode.mode & 0x80) != 0) {
                 nMode |= S_IWRITE;
             //}
-			printf("%i", nMode);
+
             /*if ((new_attributes.mode.mode & 0x40) != 0) {
                 nMode |= S_IEXEC;
             }*/
