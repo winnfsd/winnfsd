@@ -1659,7 +1659,10 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, wcc_attr *pAttr)
     pAttr->size = data.st_size;
     pAttr->mtime.seconds = data.st_mtime;
     pAttr->mtime.nseconds = 0;
-    pAttr->ctime.seconds = data.st_ctime;
+	// TODO: This needs to be tested (not called on my setup)
+	// This seems to be the changed time, not creation time.
+    //pAttr->ctime.seconds = data.st_ctime;
+	pAttr->ctime.seconds = data.st_mtime;
     pAttr->ctime.nseconds = 0;
 
     return true;
@@ -1738,7 +1741,8 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
     pAttr->atime.nseconds = 0;
     pAttr->mtime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastWriteTime);
     pAttr->mtime.nseconds = 0;
-    pAttr->ctime.seconds = FileTimeToPOSIX(lpFileInformation.ftCreationTime);
+	// This seems to be the changed time, not creation time
+	pAttr->ctime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastWriteTime);
     pAttr->ctime.nseconds = 0;
 
     return true;
