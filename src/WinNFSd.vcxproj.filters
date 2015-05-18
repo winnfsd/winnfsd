@@ -54,6 +54,9 @@
     <ClCompile Include="winnfsd.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="FileTree.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DatagramSocket.h">
@@ -99,6 +102,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="SocketStream.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="FileTree.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
