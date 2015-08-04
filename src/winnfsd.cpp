@@ -209,7 +209,7 @@ static void start(std::vector<std::vector<std::string>> paths)
 				printf("Mount daemon started\n");
 				bSuccess = true;  //all daemon started
 			} else {
-				printf("Mount daemon starts failed.\n");
+				printf("Mount daemon starts failed (check if port 1058 is not already in use ;) ).\n");
 			}
 		} else {
 			printf("NFS daemon starts failed.\n");
