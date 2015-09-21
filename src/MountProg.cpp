@@ -344,18 +344,29 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 				pPath = path1;
 			}
 
-		} else if (pPath[1] != ':' || !((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
-			printf("Path format is incorrect.\n");
-			printf("Please use a full path such as C:\\work\n");
+		}
+		if (pPath[1] == ':' && ((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
+			char tempPath[MAXPATHLEN] = "\\\\?\\";
+			strcat_s(tempPath, pPath);
+			strcpy_s(pPath, MAXPATHLEN, tempPath);
+		}
+
+		if (pPath[5] != ':' || !((pPath[4] >= 'A' && pPath[4] <= 'Z') || (pPath[4] >= 'a' && pPath[4] <= 'z'))) { //check path format
+			printf("Path %s format is incorrect.\n", pPath);
+			printf("Please use a full path such as C:\\work or \\\\?\\C:\\work\n");
 
 			return NULL;
 		}
+
 
 		for (size_t i = 0; i < strlen(pPath); i++) {
 			if (pPath[i] == '/') {
 				pPath[i] = '\\';
 			}
 		}
+
+		
+
 	} else if (format == FORMAT_PATHALIAS) {
 		if (pPath[0] != '/') { //check path alias format
 			printf("Path alias format is incorrect.\n");
