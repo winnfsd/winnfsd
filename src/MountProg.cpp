@@ -56,7 +56,7 @@ bool CMountProg::SetPathFile(char *file)
 		m_pPathFile = file;
 		return true;
 	}
-		
+
 	pathFile.close();
 	return false;
 }
@@ -75,7 +75,7 @@ void CMountProg::Export(char *path, char *pathAlias)
 			printf("Path %s with path alias  %s already known\n", path, pathAlias);
 		}
 	}
-	
+
 }
 
 bool CMountProg::Refresh()
@@ -344,9 +344,16 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 				pPath = path1;
 			}
 
-		} else if (pPath[1] != ':' || !((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
-			printf("Path format is incorrect.\n");
-			printf("Please use a full path such as C:\\work\n");
+		}
+		if (pPath[1] == ':' && ((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
+			char tempPath[MAXPATHLEN] = "\\\\?\\";
+			strcat_s(tempPath, pPath);
+			strcpy_s(pPath, MAXPATHLEN, tempPath);
+		}
+
+		if (pPath[5] != ':' || !((pPath[4] >= 'A' && pPath[4] <= 'Z') || (pPath[4] >= 'a' && pPath[4] <= 'z'))) { //check path format
+			printf("Path %s format is incorrect.\n", pPath);
+			printf("Please use a full path such as C:\\work or \\\\?\\C:\\work\n");
 
 			return NULL;
 		}
