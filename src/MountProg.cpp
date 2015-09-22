@@ -56,7 +56,7 @@ bool CMountProg::SetPathFile(char *file)
 		m_pPathFile = file;
 		return true;
 	}
-		
+
 	pathFile.close();
 	return false;
 }
@@ -75,7 +75,7 @@ void CMountProg::Export(char *path, char *pathAlias)
 			printf("Path %s with path alias  %s already known\n", path, pathAlias);
 		}
 	}
-	
+
 }
 
 bool CMountProg::Refresh()
@@ -358,15 +358,11 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 			return NULL;
 		}
 
-
 		for (size_t i = 0; i < strlen(pPath); i++) {
 			if (pPath[i] == '/') {
 				pPath[i] = '\\';
 			}
 		}
-
-		
-
 	} else if (format == FORMAT_PATHALIAS) {
 		if (pPath[0] != '/') { //check path alias format
 			printf("Path alias format is incorrect.\n");
