@@ -100,6 +100,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -156,6 +157,7 @@
     <ClInclude Include="Socket.h" />
     <ClInclude Include="SocketListener.h" />
     <ClInclude Include="SocketStream.h" />
+    <ClInclude Include="tree.hh" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />

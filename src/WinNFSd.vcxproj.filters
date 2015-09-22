@@ -104,6 +104,9 @@
     <ClInclude Include="SocketStream.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="tree.hh">
+      <Filter>Quelldateien</Filter>
+    </ClInclude>
     <ClInclude Include="FileTree.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
