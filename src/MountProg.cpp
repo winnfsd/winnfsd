@@ -229,7 +229,7 @@ bool CMountProg::GetPath(char **returnPath)
 		if ((requestedPathSize < windowsPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
 			//The requested path starts with the alias. Let's replace the alias with the real path
-			strncpy_s(finalPath, windowsPath, sizeof(finalPath));
+			strncpy_s(finalPath, /* XXX */0,  windowsPath, sizeof(finalPath));
 			//strncpy_s(finalPath + windowsPathSize, (path + aliasPathSize), (sizeof(finalPath)-windowsPathSize));
 			finalPath[windowsPathSize + requestedPathSize - aliasPathSize] = '\0';
 
@@ -241,12 +241,12 @@ bool CMountProg::GetPath(char **returnPath)
 		} else if ((strlen(path) == strlen(pathAlias)) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
 			//The requested path IS the alias
-			strncpy_s(finalPath, windowsPath, sizeof(finalPath));
+			strncpy_s(finalPath, /* XXX */0, windowsPath, sizeof(finalPath));
 			finalPath[windowsPathSize] = '\0';
 		} else if ((strlen(path) == strlen(windowsPath)) && (strncmp(path, pathAlias, windowsPathSize) == 0)) {
 			foundPath = true;
 			//The requested path does not start with the alias, let's treat it normally
-			strncpy_s(finalPath, path, sizeof(finalPath));
+			strncpy_s(finalPath, /* XXX */0, path, sizeof(finalPath));
 			finalPath[0] = finalPath[1];  //transform mount path to Windows format
 			finalPath[1] = ':';
 
