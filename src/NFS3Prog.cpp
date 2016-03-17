@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <string>
-#include <Windows.h>
+#include <windows.h>
 #include <time.h>
 #define BUFFER_SIZE 1000
 

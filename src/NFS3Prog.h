@@ -3,7 +3,7 @@
 
 #include "RPCProg.h"
 #include <string>
-#include <Windows.h>
+#include <windows.h>
 
 typedef unsigned __int64 uint64;
 typedef unsigned long uint32;

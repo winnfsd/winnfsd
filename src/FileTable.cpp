@@ -3,7 +3,7 @@
 #include <string.h>
 #include <io.h>
 #include <stdio.h>
-#include <Windows.h>
+#include <windows.h>
 #include <sys/stat.h>
 #include "tree.hh"
 
