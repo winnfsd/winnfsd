@@ -66,8 +66,6 @@ void CMountProg::Export(char *path, char *pathAlias)
 	path = FormatPath(path, FORMAT_PATH);
 
 	if (path != NULL) {
-		pathAlias = FormatPathAlias(pathAlias);
-
 		if (m_PathMap.count(pathAlias) == 0) {
 			m_PathMap[pathAlias] = path;
 			printf("Path #%i is: %s, path alias is: %s\n", m_PathMap.size(), path, pathAlias);
@@ -373,20 +371,4 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 	}
 
 	return pPath;
-}
-
-char *CMountProg::FormatPathAlias(char *pPathAlias)
-{
-	pPathAlias[1] = pPathAlias[0]; //transform mount path to Windows format
-	pPathAlias[0] = '/';
-
-	for (size_t i = 2; i < strlen(pPathAlias); i++) {
-		if (pPathAlias[i] == '\\') {
-			pPathAlias[i] = '/';
-		}
-	}
-
-	pPathAlias[strlen(pPathAlias)] = '\0';
-
-	return pPathAlias;
 }
