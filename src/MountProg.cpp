@@ -224,42 +224,45 @@ bool CMountProg::GetPath(char **returnPath)
 		size_t windowsPathSize = strlen(windowsPath);
 		size_t requestedPathSize = nSize;
 
-		if ((requestedPathSize < windowsPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
+		if ((requestedPathSize > aliasPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
 			//The requested path starts with the alias. Let's replace the alias with the real path
-			strncpy_s(finalPath, /* XXX */0,  windowsPath, sizeof(finalPath));
-			//strncpy_s(finalPath + windowsPathSize, (path + aliasPathSize), (sizeof(finalPath)-windowsPathSize));
+			strncpy_s(finalPath, MAXPATHLEN, windowsPath, windowsPathSize);
+			strncpy_s(finalPath + windowsPathSize, MAXPATHLEN - windowsPathSize, (path + aliasPathSize), requestedPathSize - aliasPathSize);
 			finalPath[windowsPathSize + requestedPathSize - aliasPathSize] = '\0';
 
-			for (i = 0; i < requestedPathSize; i++) { //transform path to Windows format
+			for (i = 0; i < requestedPathSize - aliasPathSize; i++) {
+				//transform path to Windows format
 				if (finalPath[windowsPathSize + i] == '/') {
 					finalPath[windowsPathSize + i] = '\\';
 				}
 			}
-		} else if ((strlen(path) == strlen(pathAlias)) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
+		} else if ((requestedPathSize == aliasPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
 			//The requested path IS the alias
-			strncpy_s(finalPath, /* XXX */0, windowsPath, sizeof(finalPath));
+			strncpy_s(finalPath, MAXPATHLEN, windowsPath, windowsPathSize);
 			finalPath[windowsPathSize] = '\0';
-		} else if ((strlen(path) == strlen(windowsPath)) && (strncmp(path, pathAlias, windowsPathSize) == 0)) {
-			foundPath = true;
-			//The requested path does not start with the alias, let's treat it normally
-			strncpy_s(finalPath, /* XXX */0, path, sizeof(finalPath));
-			finalPath[0] = finalPath[1];  //transform mount path to Windows format
-			finalPath[1] = ':';
-
-			for (i = 2; i < nSize; i++) {
-				if (finalPath[i] == '/') {
-					finalPath[i] = '\\';
-				}
-			}
-
-			finalPath[nSize] = '\0';
 		}
 
 		if (foundPath == true) {
 			break;
 		}
+	}
+
+	if (foundPath != true) {
+		//The requested path does not start with the alias, let's treat it normally.
+		strncpy_s(finalPath, MAXPATHLEN, path, nSize);
+		//transform mount path to Windows format. /d/work => d:\work
+		finalPath[0] = finalPath[1];
+		finalPath[1] = ':';
+
+		for (i = 2; i < nSize; i++) {
+			if (finalPath[i] == '/') {
+				finalPath[i] = '\\';
+			}
+		}
+
+		finalPath[nSize] = '\0';
 	}
 
 	PrintLog("Final local requested path: %s\n", finalPath);
