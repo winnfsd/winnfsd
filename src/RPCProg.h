@@ -38,7 +38,7 @@ class CRPCProg
 
     protected:
     bool m_bLogOn;
-    virtual int PrintLog(char *format, ...);
+    virtual int PrintLog(const char *format, ...);
 };
 
 #endif

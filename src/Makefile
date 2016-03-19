@@ -8,7 +8,7 @@ CXX := x86_64-w64-mingw32-g++
 #CC  := i686-w64-mingw32-g++
 #CXX := i686-w64-mingw32-g++
 
-CPPFLAGS=-g -std=c++11 -Wno-write-strings -D_WIN32_WINNT=0x600
+CPPFLAGS=-g -std=c++11 -D_WIN32_WINNT=0x600
 LDFLAGS=-g -static-libgcc -static-libstdc++ -mconsole
 LIBS=-lws2_32
 
