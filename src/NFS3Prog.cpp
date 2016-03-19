@@ -597,7 +597,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
         errno_t errorNumber = fopen_s(&pFile, path, "rb");
 
         if (pFile != NULL) {
-            fseek(pFile, (long)offset, SEEK_SET);
+			_fseeki64( pFile, offset, SEEK_SET ) ;
             count = fread(data.contents, sizeof(char), count, pFile);
             eof = fgetc(pFile) == EOF;
             fclose(pFile);
