@@ -657,7 +657,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
             if (offset == 0) {
                 _chsize(_fileno(pFile), 0);
             }
-            fseek(pFile, (long)offset, SEEK_SET);
+			_fseeki64( pFile, offset, SEEK_SET ) ;
             count = fwrite(data.contents, sizeof(char), data.length, pFile);
             fclose(pFile);
         } else {
@@ -1261,7 +1261,7 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
             wtpref = 4096;
             wtmult = 512;
             dtpref = 8192;
-            maxfilesize = 0x7FFFFFFF;
+            maxfilesize = 0x7FFFFFFFFFFFFFFF;
             time_delta.seconds = 1;
             time_delta.nseconds = 0;
             properties = FSF3_CANSETTIME;
