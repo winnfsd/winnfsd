@@ -31,8 +31,9 @@ CFileTable::~CFileTable()
 
     while (pTable != NULL) { //free file table
         for (i = 0; i < TABLE_SIZE; i++) {
-            delete[] pTable->pItems[i];
-            delete[] pTable->pItems[i];
+            if (!pTable->pItems[i]) {
+                delete[] pTable->pItems[i];
+            }
         }
 
         pTemp = pTable;
