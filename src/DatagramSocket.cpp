@@ -53,7 +53,6 @@ void CDatagramSocket::Close(void)
     }
 
     m_bClosed = true;
-    closesocket(m_Socket);
     delete m_pSocket;
 }
 
