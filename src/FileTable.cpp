@@ -56,7 +56,7 @@ unsigned long CFileTable::GetIDByPath(char *path)
 	if (handle == NULL)
 	{
 		//printf("Can't find id for path %s\n", path);
-		return NULL;
+		return 0;
 	}
     return *(unsigned long *)handle;
 }
@@ -396,8 +396,8 @@ int RenameDirectory(char *pathFrom, char *pathTo)
 {
 	errno_t errorNumber = RenameFile(pathFrom, pathTo);
 
-	char* dotFile = "\\.";
-	char* backFile = "\\..";
+	const char* dotFile = "\\.";
+	const char* backFile = "\\..";
 
 	char* dotDirectoryPathFrom;
 	char* dotDirectoryPathTo;
@@ -448,8 +448,8 @@ bool RemoveFolder(char *path)
 	_chmod(path, nMode);
 
     if (RemoveDirectory(path) != 0) {
-        char* dotFile = "\\.";
-        char* backFile = "\\..";
+        const char* dotFile = "\\.";
+        const char* backFile = "\\..";
 
         char* dotDirectoryPath;
         char* backDirectoryPath;

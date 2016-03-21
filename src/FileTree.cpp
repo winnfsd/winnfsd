@@ -64,7 +64,7 @@ void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
 		if (filesTree.number_of_children(parentNode) < 1) {
 			FILE_ITEM emptyItem;
 			emptyItem.nPathLen = 0;
-			emptyItem.path = "";
+			emptyItem.path = const_cast<char*>("");
 			filesTree.append_child(tree<FILE_ITEM>::iterator_base(parentNode), emptyItem);
 		}
 		tree<FILE_ITEM>::iterator firstChild = filesTree.begin(parentNode);
