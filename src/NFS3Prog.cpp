@@ -1643,7 +1643,7 @@ nfsstat3 CNFS3Prog::CheckFile(char *directory, char *fullPath)
 
 bool CNFS3Prog::GetFileHandle(char *path, nfs_fh3 *pObject)
 {
-    memcpy(pObject->contents, ::GetFileHandle(path), pObject->length);
+    memcpy_s(pObject->contents, NFS3_FHSIZE, ::GetFileHandle(path), pObject->length);
 
     return true;
 }
