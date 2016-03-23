@@ -71,7 +71,7 @@ unsigned char *CFileTable::GetHandleByPath(char *path)
 		//printf("Add file for path %s\n", path);
         AddItem(path);
 		node = g_FileTree.FindFileItemForPath(path);
-		if (node->data.handle == NULL)
+		if (node == NULL || node->data.handle == NULL)
 		{
 			//printf("Missing handle for path %s\n", path);
 		}
