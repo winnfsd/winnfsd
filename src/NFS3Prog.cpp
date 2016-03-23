@@ -1643,7 +1643,15 @@ nfsstat3 CNFS3Prog::CheckFile(char *directory, char *fullPath)
 
 bool CNFS3Prog::GetFileHandle(char *path, nfs_fh3 *pObject)
 {
-    memcpy_s(pObject->contents, NFS3_FHSIZE, ::GetFileHandle(path), pObject->length);
+	if (!::GetFileHandle(path)) {
+		PrintLog("no filehandle(path %s)", path);
+		return false;
+	}
+    auto err = memcpy_s(pObject->contents, NFS3_FHSIZE, ::GetFileHandle(path), pObject->length);
+	if (err != 0) {
+		PrintLog(" err %d ", err);
+		return false;
+	}
 
     return true;
 }
