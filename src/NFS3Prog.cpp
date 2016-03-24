@@ -769,16 +769,16 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
 
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
-    errno_t errorNumber = _mkdir(path);
+    int result = _mkdir(path);
 
-    if (errorNumber == 0) {
+    if (result == 0) {
         stat = NFS3_OK;
         obj.handle_follows = GetFileHandle(path, &obj.handle);
         obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
-    } else if (errorNumber == EEXIST) {
+    } else if (errno == EEXIST) {
         PrintLog("Directory already exists.");
         stat = NFS3ERR_EXIST;
-    } else if (errorNumber == ENOENT) {
+    } else if (errno == ENOENT) {
         stat = NFS3ERR_NOENT;
     } else {
         stat = CheckFile(path);
