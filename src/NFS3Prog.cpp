@@ -8,6 +8,7 @@
 #include <string>
 #include <windows.h>
 #include <time.h>
+#include <share.h>
 #define BUFFER_SIZE 1000
 
 enum

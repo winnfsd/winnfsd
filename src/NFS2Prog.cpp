@@ -5,6 +5,7 @@
 #include <direct.h>
 #include <sys/stat.h>
 #include <windows.h>
+#include <share.h>
 
 enum
 {
