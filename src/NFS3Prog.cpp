@@ -594,7 +594,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
 
     if (stat == NFS3_OK) {
         data.SetSize(count);
-        errno_t errorNumber = fopen_s(&pFile, path, "rb");
+        pFile = _fsopen(path, "rb", _SH_DENYWR);
 
         if (pFile != NULL) {
             fseek(pFile, (long)offset, SEEK_SET);
@@ -603,6 +603,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
             fclose(pFile);
         } else {
             char buffer[BUFFER_SIZE];
+            errno_t errorNumber = errno;
             strerror_s(buffer, BUFFER_SIZE, errorNumber);
             PrintLog(buffer);
 
@@ -651,7 +652,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
     file_wcc.before.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.before.attributes);
 
     if (stat == NFS3_OK) {       
-        errno_t errorNumber = fopen_s(&pFile, path, "r+b");
+        pFile = _fsopen(path, "r+b", _SH_DENYWR);
 
         if (pFile != NULL) {
             if (offset == 0) {
@@ -662,6 +663,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
             fclose(pFile);
         } else {
             char buffer[BUFFER_SIZE];
+            errno_t errorNumber = errno;
             strerror_s(buffer, BUFFER_SIZE, errorNumber);
             PrintLog(buffer);
 
@@ -709,13 +711,14 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
 
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
-    errno_t errorNumber = fopen_s(&pFile, path, "wb");
+    pFile = _fsopen(path, "wb", _SH_DENYWR);
        
     if (pFile != NULL) {
         fclose(pFile);
         stat = NFS3_OK;
     } else {
         char buffer[BUFFER_SIZE];
+        errno_t errorNumber = errno;
         strerror_s(buffer, BUFFER_SIZE, errorNumber);
         PrintLog(buffer);
 

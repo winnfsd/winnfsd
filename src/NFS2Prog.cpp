@@ -181,7 +181,7 @@ void CNFS2Prog::ProcedureREAD(void)
     m_pInStream->Read(&nCount);
     m_pInStream->Read(&nTotalCount);
 
-    errno_t error = fopen_s(&file, path, "rb");
+    file = _fsopen(path, "rb", _SH_DENYWR);
 
     if (file != NULL) {
         fseek(file, nOffset, SEEK_SET);
@@ -226,7 +226,7 @@ void CNFS2Prog::ProcedureWRITE(void)
     pBuffer = new char[nCount];
     m_pInStream->Read(pBuffer, nCount);
 
-    fopen_s(&file, path, "r+b");
+    file = _fsopen(path, "r+b", _SH_DENYWR);
 
     if (file != NULL) {
         fseek(file, nOffset, SEEK_SET);
@@ -254,7 +254,7 @@ void CNFS2Prog::ProcedureCREATE(void)
         return;
     }
 
-    fopen_s(&file, path, "wb");
+    file = _fsopen(path, "wb", _SH_DENYWR);
 
     if (file != NULL) {
         fclose(file);
