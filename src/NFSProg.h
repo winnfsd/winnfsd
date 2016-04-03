@@ -2,7 +2,6 @@
 #define _NFSPROG_H_
 
 #include "RPCProg.h"
-#include "NFS2Prog.h"
 #include "NFS3Prog.h"
 
 class CNFSProg : public CRPCProg
@@ -16,7 +15,6 @@ class CNFSProg : public CRPCProg
 
     private:
     unsigned int m_nUID, m_nGID;
-    CNFS2Prog *m_pNFS2Prog;
     CNFS3Prog *m_pNFS3Prog;
 };
 

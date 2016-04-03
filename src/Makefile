@@ -1,5 +1,5 @@
 PROGRAM = winnfsd.exe
-SRCS = DatagramSocket.cpp FileTable.cpp FileTree.cpp MountProg.cpp NFS2Prog.cpp NFS3Prog.cpp NFSProg.cpp PortmapProg.cpp RPCProg.cpp RPCServer.cpp ServerSocket.cpp Socket.cpp SocketStream.cpp winnfsd.cpp
+SRCS = DatagramSocket.cpp FileTable.cpp FileTree.cpp MountProg.cpp NFS3Prog.cpp NFSProg.cpp PortmapProg.cpp RPCProg.cpp RPCServer.cpp ServerSocket.cpp Socket.cpp SocketStream.cpp winnfsd.cpp
 OBJS = $(subst .cpp,.o,$(SRCS))
 
 RM  := rm
