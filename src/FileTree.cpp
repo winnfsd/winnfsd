@@ -5,38 +5,10 @@
 #include <windows.h>
 #include <sys/stat.h>
 #include "tree.hh"
+#include "conv.h"
 
 static tree<FILE_ITEM> filesTree;
 static tree<FILE_ITEM>::iterator topNode;
-
-
-wchar_t* _conv_from_932(const char* s) {
-	auto count = MultiByteToWideChar(932, MB_ERR_INVALID_CHARS, s, strlen(s), NULL, 0);
-	if (count == 0) {
-		return NULL;
-	}
-	auto dest = new wchar_t[count + 1];
-	auto err = MultiByteToWideChar(932, MB_ERR_INVALID_CHARS, s, strlen(s), dest, count);
-	if (err == 0) {
-		return NULL;
-	}
-	dest[count] = 0;
-	return dest;
-}
-
-char* _conv_to_932(const wchar_t* s) {
-	auto count = WideCharToMultiByte(932, 0, s, wcslen(s), NULL, 0, NULL, NULL);
-	if (count == 0) {
-		return NULL;
-	}
-	auto dest = new char[count + 1];
-	auto err = WideCharToMultiByte(932, 0, s, wcslen(s), dest, count, NULL, NULL);
-	if (err == 0) {
-		return NULL;
-	}
-	dest[count] = 0;
-	return dest;
-}
 
 std::string _first_dirname(std::string path) {
 	auto wcs = _conv_from_932(path.c_str());
