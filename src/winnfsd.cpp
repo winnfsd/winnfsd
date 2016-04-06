@@ -56,12 +56,12 @@ static void printLine(void)
 static void printAbout(void)
 {
     printLine();
-    printf("WinNFSd v2.0\n");
+    printf("WinNFSd v2.1-beta\n");
     printf("Network File System server for Windows\n");
     printf("Copyright (C) 2005 Ming-Yang Kao\n");
     printf("Edited in 2011 by ZeWaren\n");
     printf("Edited in 2013 by Alexander Schneider (Jankowfsky AG)\n");
-	printf("Edited in 2014 2015 by Yann Schepens\n");
+	  printf("Edited in 2014 2015 by Yann Schepens\n");
     printLine();
 }
 
@@ -73,8 +73,8 @@ static void printHelp(void)
     printf("help: display help\n");
     printf("log on/off: display log messages or not\n");
     printf("list: list mounted clients\n");
-	printf("refresh: refresh the mounted folders\n");
-	printf("reset: reset the service\n");
+    printf("refresh: refresh the mounted folders\n");
+    printf("reset: reset the service\n");
     printf("quit: quit this program\n");
     printLine();
 }
