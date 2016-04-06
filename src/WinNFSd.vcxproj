@@ -125,11 +125,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="conv.cpp" />
     <ClCompile Include="DatagramSocket.cpp" />
     <ClCompile Include="FileTable.cpp" />
     <ClCompile Include="FileTree.cpp" />
     <ClCompile Include="MountProg.cpp" />
-    <ClCompile Include="NFS2Prog.cpp" />
     <ClCompile Include="NFS3Prog.cpp" />
     <ClCompile Include="NFSProg.cpp" />
     <ClCompile Include="PortmapProg.cpp" />

@@ -15,6 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="conv.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
     <ClCompile Include="DatagramSocket.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -22,9 +25,6 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="MountProg.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="NFS2Prog.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="NFS3Prog.cpp">
