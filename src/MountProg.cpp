@@ -64,8 +64,9 @@ bool CMountProg::SetPathFile(char *file)
 void CMountProg::Export(char *path, char *pathAlias)
 {
 	path = FormatPath(path, FORMAT_PATH);
+	pathAlias = FormatPath(pathAlias, FORMAT_PATHALIAS);
 
-	if (path != NULL) {
+	if (path != NULL && pathAlias != NULL) {
 		if (m_PathMap.count(pathAlias) == 0) {
 			m_PathMap[pathAlias] = path;
 			printf("Path #%i is: %s, path alias is: %s\n", m_PathMap.size(), path, pathAlias);
@@ -365,7 +366,16 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 			}
 		}
 	} else if (format == FORMAT_PATHALIAS) {
-		if (pPath[0] != '/') { //check path alias format
+		if (pPath[1] == ':' && ((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) {
+			//transform Windows format to mount path d:\work => /d/work
+			pPath[1] = pPath[0];
+			pPath[0] = '/';
+			for (size_t i = 2; i < strlen(pPath); i++) {
+				if (pPath[i] == '\\') {
+					pPath[i] = '/';
+				}
+			}
+		} else if (pPath[0] != '/') { //check path alias format
 			printf("Path alias format is incorrect.\n");
 			printf("Please use a path like /exports\n");
 
