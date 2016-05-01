@@ -1,0 +1,10 @@
+version: 2.0.{build}
+build_script:
+- cmd: >-
+    cd src
+
+    set path=c:\msys64\mingw64\bin;%path%
+
+    c:\msys64\usr\bin\make ARCH=x86_64
+artifacts:
+- path: src/winnfsd.exe
