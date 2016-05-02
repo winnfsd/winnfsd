@@ -194,11 +194,11 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 	}
 	else {
 		// If the current topNode isn't related to the requested path
-		// iterate over all top elements in the tree too look for
+		// iterate over all _top_ level elements in the tree to look for
 		// a matching item and register it as current top node.
 
 		// printf("NOT found %s is NOT part of %s  \n", sPath.c_str(), topNode->path);
-		tree<FILE_ITEM>::iterator it;
+		tree<FILE_ITEM>::sibling_iterator it;
 		for (it = filesTree.begin(); it != filesTree.end(); it++)
 		{
 			std::string itPath(it.node->data.path);
@@ -273,12 +273,12 @@ char* CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
 {
 	std::string path;
 	path.append(node->data.path);
-	node = node->parent;
-	while (node != NULL)
+	tree_node_<FILE_ITEM>* parentNode = node->parent;
+	while (parentNode != NULL)
 	{
 		path.insert(0, "\\");
-		path.insert(0, node->data.path);
-		node = node->parent;
+		path.insert(0, parentNode->data.path);
+		parentNode = parentNode->parent;
 	}
 
 	// TODO : Memory leak
