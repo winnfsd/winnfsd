@@ -555,8 +555,15 @@ nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
                     size_t i;
                     wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
 
-                    data.Set(pMBBuffer);
+                    // write path always as /, so windows created symlinks work too
+                    std::string strFromChar;
+                    strFromChar.append(pMBBuffer);
+                    std::replace(strFromChar.begin(), strFromChar.end(), '\\', '/');
+                    char *result = _strdup(strFromChar.c_str());
+
+                    data.Set(result);
                     free(pMBBuffer);
+                    free(result);
                 }
                 free(lpOutBuffer);
             }
@@ -828,7 +835,12 @@ nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 
     std::string fullTargetPath = dirName + std::string("\\") + std::string(lpTargetFileName);
 
-	targetFileAttr = GetFileAttributes(fullTargetPath.c_str());
+    // Relative path do not work with GetFileAttributes (directory are not recognized)
+    // so we normalize the path before calling GetFileAttributes
+    TCHAR fullTargetPathNormalized[MAX_PATH];
+    _In_ LPTSTR fullTargetPathString = const_cast<LPSTR>(fullTargetPath.c_str());;
+    GetFullPathName(fullTargetPathString, MAX_PATH, fullTargetPathNormalized, NULL);
+    targetFileAttr = GetFileAttributes(fullTargetPathNormalized);
 
     dwFlags = 0x0;
 	if (targetFileAttr & FILE_ATTRIBUTE_DIRECTORY) {
