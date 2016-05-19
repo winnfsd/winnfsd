@@ -26,7 +26,6 @@ class CMountProg : public CRPCProg
     int GetMountNumber(void);
     int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
 	char *FormatPath(char *pPath, pathFormats format);
-	char *FormatPathAlias(char *pPathAlias);
 
     protected:
     int m_nMountNum;

@@ -33,13 +33,18 @@ typedef void (CMountProg::*PPROC)(void);
 CMountProg::CMountProg() : CRPCProg()
 {
     m_nMountNum = 0;
+    m_pPathFile = NULL;
     memset(m_pClientAddr, 0, sizeof(m_pClientAddr));
 }
 
 CMountProg::~CMountProg()
 {
     int i;
-	m_pPathFile = NULL;
+
+    if (m_pPathFile) {
+        free(m_pPathFile);
+        m_pPathFile = NULL;
+    }	
 
     for (i = 0; i < MOUNT_NUM_MAX; i++) {
         delete[] m_pClientAddr[i];
@@ -49,31 +54,42 @@ CMountProg::~CMountProg()
 
 bool CMountProg::SetPathFile(char *file)
 {
-	std::ifstream pathFile(file);
+	char *formattedFile = FormatPath(file, FORMAT_PATH);
+
+	if (!formattedFile) {
+		return false;
+	}
+
+	std::ifstream pathFile(formattedFile);
 
 	if (pathFile.good()) {
 		pathFile.close();
-		m_pPathFile = file;
+		if (m_pPathFile) {
+			free(m_pPathFile);
+		}
+		m_pPathFile = formattedFile;
 		return true;
 	}
 
 	pathFile.close();
+	free(formattedFile);
 	return false;
 }
 
 void CMountProg::Export(char *path, char *pathAlias)
 {
-	path = FormatPath(path, FORMAT_PATH);
+	char *formattedPath = FormatPath(path, FORMAT_PATH);
+	pathAlias = FormatPath(pathAlias, FORMAT_PATHALIAS);
 
-	if (path != NULL) {
-		pathAlias = FormatPathAlias(pathAlias);
-
+	if (path != NULL && pathAlias != NULL) {
 		if (m_PathMap.count(pathAlias) == 0) {
-			m_PathMap[pathAlias] = path;
+			m_PathMap[pathAlias] = formattedPath;
 			printf("Path #%i is: %s, path alias is: %s\n", m_PathMap.size(), path, pathAlias);
 		} else {
 			printf("Path %s with path alias  %s already known\n", path, pathAlias);
 		}
+
+		free(formattedPath);
 	}
 
 }
@@ -226,42 +242,45 @@ bool CMountProg::GetPath(char **returnPath)
 		size_t windowsPathSize = strlen(windowsPath);
 		size_t requestedPathSize = nSize;
 
-		if ((requestedPathSize < windowsPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
+		if ((requestedPathSize > aliasPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
 			//The requested path starts with the alias. Let's replace the alias with the real path
-			strncpy_s(finalPath, windowsPath, sizeof(finalPath));
-			//strncpy_s(finalPath + windowsPathSize, (path + aliasPathSize), (sizeof(finalPath)-windowsPathSize));
+			strncpy_s(finalPath, MAXPATHLEN, windowsPath, windowsPathSize);
+			strncpy_s(finalPath + windowsPathSize, MAXPATHLEN - windowsPathSize, (path + aliasPathSize), requestedPathSize - aliasPathSize);
 			finalPath[windowsPathSize + requestedPathSize - aliasPathSize] = '\0';
 
-			for (i = 0; i < requestedPathSize; i++) { //transform path to Windows format
+			for (i = 0; i < requestedPathSize - aliasPathSize; i++) {
+				//transform path to Windows format
 				if (finalPath[windowsPathSize + i] == '/') {
 					finalPath[windowsPathSize + i] = '\\';
 				}
 			}
-		} else if ((strlen(path) == strlen(pathAlias)) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
+		} else if ((requestedPathSize == aliasPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
 			//The requested path IS the alias
-			strncpy_s(finalPath, windowsPath, sizeof(finalPath));
+			strncpy_s(finalPath, MAXPATHLEN, windowsPath, windowsPathSize);
 			finalPath[windowsPathSize] = '\0';
-		} else if ((strlen(path) == strlen(windowsPath)) && (strncmp(path, pathAlias, windowsPathSize) == 0)) {
-			foundPath = true;
-			//The requested path does not start with the alias, let's treat it normally
-			strncpy_s(finalPath, path, sizeof(finalPath));
-			finalPath[0] = finalPath[1];  //transform mount path to Windows format
-			finalPath[1] = ':';
-
-			for (i = 2; i < nSize; i++) {
-				if (finalPath[i] == '/') {
-					finalPath[i] = '\\';
-				}
-			}
-
-			finalPath[nSize] = '\0';
 		}
 
 		if (foundPath == true) {
 			break;
 		}
+	}
+
+	if (foundPath != true) {
+		//The requested path does not start with the alias, let's treat it normally.
+		strncpy_s(finalPath, MAXPATHLEN, path, nSize);
+		//transform mount path to Windows format. /d/work => d:\work
+		finalPath[0] = finalPath[1];
+		finalPath[1] = ':';
+
+		for (i = 2; i < nSize; i++) {
+			if (finalPath[i] == '/') {
+				finalPath[i] = '\\';
+			}
+		}
+
+		finalPath[nSize] = '\0';
 	}
 
 	PrintLog("Final local requested path: %s\n", finalPath);
@@ -277,7 +296,6 @@ bool CMountProg::GetPath(char **returnPath)
 
 bool CMountProg::ReadPathsFromFile(char* sFileName)
 {
-	sFileName = FormatPath(sFileName, FORMAT_PATH);
 	std::ifstream pathFile(sFileName);
 
 	if (pathFile.is_open()) {
@@ -306,14 +324,17 @@ bool CMountProg::ReadPathsFromFile(char* sFileName)
 
 char *CMountProg::FormatPath(char *pPath, pathFormats format)
 {
+    size_t len = strlen(pPath);
+
 	//Remove head spaces
 	while (*pPath == ' ') {
 		++pPath;
+		len--;
 	}
 
 	//Remove tail spaces
-	while (*(pPath + strlen(pPath) - 1) == ' ') {
-		*(pPath + strlen(pPath) - 1) = '\0';
+	while (len > 0 && *(pPath + len - 1) == ' ') {
+		len--;
 	}
 
 	//Is comment?
@@ -324,69 +345,76 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 	//Remove head "
 	if (*pPath == '"') {
 		++pPath;
+		len--;
 	}
 
 	//Remove tail "
-	if (*(pPath + strlen(pPath) - 1) == '"') {
-		*(pPath + strlen(pPath) - 1) = '\0';
+	if (len > 0 && *(pPath + len - 1) == '"') {
+		len--;
 	}
+
+	if (len < 1) {
+		return NULL;
+	}
+
+	char *result = (char *)malloc(len + 1);
+	strncpy_s(result, len + 1, pPath, len);
 
 	//Check for right path format
 	if (format == FORMAT_PATH) {
-		if (pPath[0] == '.') {
+		if (result[0] == '.') {
 			static char path1[MAXPATHLEN];
 			_getcwd(path1, MAXPATHLEN);
 
-			if (pPath[1] == '\0') {
-				pPath = path1;
-			} else if (pPath[1] == '\\') {
-				strcat_s(path1, pPath + 1);
-				pPath = path1;
+			if (result[1] == '\0') {
+				len = strlen(path1);
+				result = (char *)realloc(result, len + 1);
+				strcpy_s(result, len + 1, path1);
+			} else if (result[1] == '\\') {
+				strcat_s(path1, result + 1);
+				len = strlen(path1);
+				result = (char *)realloc(result, len + 1);
+				strcpy_s(result, len + 1, path1);
 			}
 
 		}
-		if (pPath[1] == ':' && ((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) { //check path format
+		if (len >= 2 && result[1] == ':' && ((result[0] >= 'A' && result[0] <= 'Z') || (result[0] >= 'a' && result[0] <= 'z'))) { //check path format
 			char tempPath[MAXPATHLEN] = "\\\\?\\";
-			strcat_s(tempPath, pPath);
-			strcpy_s(pPath, MAXPATHLEN, tempPath);
+			strcat_s(tempPath, result);
+			len = strlen(tempPath);
+			result = (char *)realloc(result, len + 1);
+			strcpy_s(result, len + 1, tempPath);
 		}
 
-		if (pPath[5] != ':' || !((pPath[4] >= 'A' && pPath[4] <= 'Z') || (pPath[4] >= 'a' && pPath[4] <= 'z'))) { //check path format
+		if (len < 6 || result[5] != ':' || !((result[4] >= 'A' && result[4] <= 'Z') || (result[4] >= 'a' && result[4] <= 'z'))) { //check path format
 			printf("Path %s format is incorrect.\n", pPath);
 			printf("Please use a full path such as C:\\work or \\\\?\\C:\\work\n");
-
+			free(result);
 			return NULL;
 		}
 
-		for (size_t i = 0; i < strlen(pPath); i++) {
-			if (pPath[i] == '/') {
-				pPath[i] = '\\';
+		for (size_t i = 0; i < len; i++) {
+			if (result[i] == '/') {
+				result[i] = '\\';
 			}
 		}
 	} else if (format == FORMAT_PATHALIAS) {
-		if (pPath[0] != '/') { //check path alias format
+		if (pPath[1] == ':' && ((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) {
+			//transform Windows format to mount path d:\work => /d/work
+			pPath[1] = pPath[0];
+			pPath[0] = '/';
+			for (size_t i = 2; i < strlen(pPath); i++) {
+				if (pPath[i] == '\\') {
+					pPath[i] = '/';
+				}
+			}
+		} else if (pPath[0] != '/') { //check path alias format
 			printf("Path alias format is incorrect.\n");
 			printf("Please use a path like /exports\n");
-
+			free(result);
 			return NULL;
 		}
 	}
 
-	return pPath;
-}
-
-char *CMountProg::FormatPathAlias(char *pPathAlias)
-{
-	pPathAlias[1] = pPathAlias[0]; //transform mount path to Windows format
-	pPathAlias[0] = '/';
-
-	for (size_t i = 2; i < strlen(pPathAlias); i++) {
-		if (pPathAlias[i] == '\\') {
-			pPathAlias[i] = '/';
-		}
-	}
-
-	pPathAlias[strlen(pPathAlias)] = '\0';
-
-	return pPathAlias;
+	return result;
 }

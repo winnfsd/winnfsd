@@ -16,7 +16,7 @@ void CRPCProg::SetLogOn(bool bLogOn)
     m_bLogOn = bLogOn;
 }
 
-int CRPCProg::PrintLog(char *format, ...)
+int CRPCProg::PrintLog(const char *format, ...)
 {
     va_list vargs;
     int nResult;

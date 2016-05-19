@@ -6,8 +6,9 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <string>
-#include <Windows.h>
+#include <windows.h>
 #include <time.h>
+#include <share.h>
 #define BUFFER_SIZE 1000
 
 enum
@@ -601,7 +602,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
 
     if (stat == NFS3_OK) {
         data.SetSize(count);
-        errno_t errorNumber = fopen_s(&pFile, path, "rb");
+        pFile = _fsopen(path, "rb", _SH_DENYWR);
 
         if (pFile != NULL) {
             fseek(pFile, (long)offset, SEEK_SET);
@@ -610,6 +611,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
             fclose(pFile);
         } else {
             char buffer[BUFFER_SIZE];
+            errno_t errorNumber = errno;
             strerror_s(buffer, BUFFER_SIZE, errorNumber);
             PrintLog(buffer);
 
@@ -658,7 +660,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
     file_wcc.before.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.before.attributes);
 
     if (stat == NFS3_OK) {       
-        errno_t errorNumber = fopen_s(&pFile, path, "r+b");
+        pFile = _fsopen(path, "r+b", _SH_DENYWR);
 
         if (pFile != NULL) {
             if (offset == 0) {
@@ -669,6 +671,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
             fclose(pFile);
         } else {
             char buffer[BUFFER_SIZE];
+            errno_t errorNumber = errno;
             strerror_s(buffer, BUFFER_SIZE, errorNumber);
             PrintLog(buffer);
 
@@ -716,13 +719,14 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
 
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
-    errno_t errorNumber = fopen_s(&pFile, path, "wb");
+    pFile = _fsopen(path, "wb", _SH_DENYWR);
        
     if (pFile != NULL) {
         fclose(pFile);
         stat = NFS3_OK;
     } else {
         char buffer[BUFFER_SIZE];
+        errno_t errorNumber = errno;
         strerror_s(buffer, BUFFER_SIZE, errorNumber);
         PrintLog(buffer);
 
@@ -773,16 +777,16 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
 
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
-    errno_t errorNumber = _mkdir(path);
+    int result = _mkdir(path);
 
-    if (errorNumber == 0) {
+    if (result == 0) {
         stat = NFS3_OK;
         obj.handle_follows = GetFileHandle(path, &obj.handle);
         obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
-    } else if (errorNumber == EEXIST) {
+    } else if (errno == EEXIST) {
         PrintLog("Directory already exists.");
         stat = NFS3ERR_EXIST;
-    } else if (errorNumber == ENOENT) {
+    } else if (errno == ENOENT) {
         stat = NFS3ERR_NOENT;
     } else {
         stat = CheckFile(path);
@@ -1655,7 +1659,15 @@ nfsstat3 CNFS3Prog::CheckFile(char *directory, char *fullPath)
 
 bool CNFS3Prog::GetFileHandle(char *path, nfs_fh3 *pObject)
 {
-    memcpy(pObject->contents, ::GetFileHandle(path), pObject->length);
+	if (!::GetFileHandle(path)) {
+		PrintLog("no filehandle(path %s)", path);
+		return false;
+	}
+    auto err = memcpy_s(pObject->contents, NFS3_FHSIZE, ::GetFileHandle(path), pObject->length);
+	if (err != 0) {
+		PrintLog(" err %d ", err);
+		return false;
+	}
 
     return true;
 }

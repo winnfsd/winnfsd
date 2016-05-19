@@ -3,7 +3,7 @@
 #include <string.h>
 #include <io.h>
 #include <stdio.h>
-#include <Windows.h>
+#include <windows.h>
 #include <sys/stat.h>
 #include "tree.hh"
 
@@ -31,8 +31,9 @@ CFileTable::~CFileTable()
 
     while (pTable != NULL) { //free file table
         for (i = 0; i < TABLE_SIZE; i++) {
-            delete[] pTable->pItems[i];
-            delete[] pTable->pItems[i];
+            if (!pTable->pItems[i]) {
+                delete[] pTable->pItems[i];
+            }
         }
 
         pTemp = pTable;
@@ -55,7 +56,7 @@ unsigned long CFileTable::GetIDByPath(char *path)
 	if (handle == NULL)
 	{
 		//printf("Can't find id for path %s\n", path);
-		return NULL;
+		return 0;
 	}
     return *(unsigned long *)handle;
 }
@@ -70,7 +71,7 @@ unsigned char *CFileTable::GetHandleByPath(char *path)
 		//printf("Add file for path %s\n", path);
         AddItem(path);
 		node = g_FileTree.FindFileItemForPath(path);
-		if (node->data.handle == NULL)
+		if (node == NULL || node->data.handle == NULL)
 		{
 			//printf("Missing handle for path %s\n", path);
 		}
@@ -395,8 +396,8 @@ int RenameDirectory(char *pathFrom, char *pathTo)
 {
 	errno_t errorNumber = RenameFile(pathFrom, pathTo);
 
-	char* dotFile = "\\.";
-	char* backFile = "\\..";
+	const char* dotFile = "\\.";
+	const char* backFile = "\\..";
 
 	char* dotDirectoryPathFrom;
 	char* dotDirectoryPathTo;
@@ -447,8 +448,8 @@ bool RemoveFolder(char *path)
 	_chmod(path, nMode);
 
     if (RemoveDirectory(path) != 0) {
-        char* dotFile = "\\.";
-        char* backFile = "\\..";
+        const char* dotFile = "\\.";
+        const char* backFile = "\\..";
 
         char* dotDirectoryPath;
         char* backDirectoryPath;

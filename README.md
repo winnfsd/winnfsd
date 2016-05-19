@@ -1,6 +1,8 @@
 WinNFSd
 =======
 
+[![Build status](https://ci.appveyor.com/api/projects/status/5necae0h6dlrid3t?svg=true)](https://ci.appveyor.com/project/Yasushi/winnfsd)
+
 Introduction
 ------------
 * Fork of WinNFSd_edited by ZeWarden(http://github.com/ZeWaren/WinNFSd_edited), based on WinNFSd by vincentgao (http://sourceforge.net/projects/winnfsd/).
