@@ -400,6 +400,7 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
     wcc_data obj_wcc;
     nfsstat3 stat;
     int nMode;
+    FILE *pFile;
 
     PrintLog("SETATTR");
     path = GetPath();
@@ -430,6 +431,13 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
 
             }
         }   
+
+        if (new_attributes.size.set_it){
+            pFile = _fsopen(path, "r+b", _SH_DENYWR);
+            int filedes = _fileno(pFile);
+            _chsize_s(filedes, new_attributes.size.size);
+            fclose(pFile);
+        }
     }
 
     obj_wcc.after.attributes_follow = GetFileAttributesForNFS(path, &obj_wcc.after.attributes);
