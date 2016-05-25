@@ -1,13 +1,14 @@
 branches:
   only:
     - develop
+    
+configuration:
+  - Debug
+  - Release    
+
 matrix:
   fast_finish: true
-  allow_failures:
-    - platform: x86
-      configuration: Debug
-    - platform: x86
-      configuration: Release   
+
 artifacts:
   - path: src/Debug/winnfsd.exe
   - path: src/Release/winnfsd.exe
