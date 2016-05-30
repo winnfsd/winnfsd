@@ -1,14 +1,51 @@
+cache:
+  - C:\Users\appveyor\.vagrant.d
+  - C:\downloads
+
 branches:
   only:
     - develop
-    
+
 configuration:
-  - Debug
-  - Release    
+  - Release
+
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  - ps: mkdir C:\Users\appveyor\.vagrant.d | Out-Null
+  - ps: mkdir C:\downloads | Out-Null
+
+install:
+  - ps: |
+      cd C:\downloads
+      if (-Not (Test-Path C:\downloads\VirtualBox-5.0.20-106931-Win.exe)){ Start-FileDownload "http://download.virtualbox.org/virtualbox/5.0.20/VirtualBox-5.0.20-106931-Win.exe" }
+      if (-Not (Test-Path C:\downloads\vagrant_1.8.1.msi)){ Start-FileDownload "https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1.msi" }
+      Start-Process -FilePath "VirtualBox-5.0.20-106931-Win.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\VBox" -Wait
+      Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_1.8.1.msi /qb TARGETDIR=C:\Vagrant" -Wait
+      cd $env:APPVEYOR_BUILD_FOLDER
+  - set PATH=C:\Vagrant\HashiCorp\Vagrant\bin;C:\VBox;%PATH%
+  - vagrant -v
+  - VBoxManage -v
+  - ssh -V
+  - ipconfig /all
+
+before_test:
+  - netsh advfirewall firewall add rule name="WinNFSd-IN" dir="in" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
+  - netsh advfirewall firewall add rule name="WinNFSd-OUT" dir="out" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
+  - vagrant box update
+  - vagrant up
+  - vagrant ssh -c "sudo apt-get -y install git"
+  - vagrant ssh -c "cd ~ && git clone https://github.com/marcharding/connectathon-winnfsd.git"
+  - vagrant ssh -c "cd ~/connectathon-winnfsd && git checkout connectathon-winnfsd && sudo make"
+  - mkdir C:\connectathon-winnfsd
+  - ps: start-process "C:\projects\winnfsd\src\Release\WinNFSd.exe" "-log off C:\connectathon-winnfsd"
+
+test_script:
+  - vagrant ssh -c "sudo mkdir /vagrant && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:'C:\connectathon-winnfsd' /vagrant"
+  - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -b -o rw,vers=3,udp,nolock 192.168.56.1"
+  - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -l -o rw,vers=3,udp,nolock 192.168.56.1"
 
 matrix:
   fast_finish: true
 
 artifacts:
-  - path: src/Debug/winnfsd.exe
   - path: src/Release/winnfsd.exe
