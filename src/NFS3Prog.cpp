@@ -662,9 +662,6 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
         errno_t errorNumber = fopen_s(&pFile, path, "r+b");
 
         if (pFile != NULL) {
-            if (offset == 0) {
-                _chsize(_fileno(pFile), 0);
-            }
             fseek(pFile, (long)offset, SEEK_SET);
             count = fwrite(data.contents, sizeof(char), data.length, pFile);
             fclose(pFile);
