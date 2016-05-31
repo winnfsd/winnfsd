@@ -42,6 +42,7 @@ before_test:
 test_script:
   - vagrant ssh -c "sudo mkdir /vagrant && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:'C:\connectathon-winnfsd' /vagrant"
   - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -b -o rw,vers=3,udp,nolock 192.168.56.1"
+  - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -g -o rw,vers=3,udp,nolock 192.168.56.1"
   - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -l -o rw,vers=3,udp,nolock 192.168.56.1"
 
 matrix:
