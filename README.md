@@ -1,7 +1,7 @@
 WinNFSd
 =======
 
-[![Build status](https://ci.appveyor.com/api/projects/status/5necae0h6dlrid3t?svg=true)](https://ci.appveyor.com/project/Yasushi/winnfsd)
+[![Build status](https://ci.appveyor.com/api/projects/status/qsqr639ub07vnocy?svg=true)](https://ci.appveyor.com/project/MarcHarding/winnfsd)
 
 Introduction
 ------------
