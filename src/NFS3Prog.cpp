@@ -671,9 +671,6 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
         pFile = _fsopen(path, "r+b", _SH_DENYWR);
 
         if (pFile != NULL) {
-            if (offset == 0) {
-                _chsize(_fileno(pFile), 0);
-            }
             fseek(pFile, (long)offset, SEEK_SET);
             count = fwrite(data.contents, sizeof(char), data.length, pFile);
             fclose(pFile);
