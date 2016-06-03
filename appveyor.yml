@@ -10,6 +10,8 @@ configuration:
   - Release
 
 init:
+  - git config --global core.eol lf
+  - git config --global core.autocrlf false
   - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - ps: mkdir C:\Users\appveyor\.vagrant.d | Out-Null
   - ps: mkdir C:\downloads | Out-Null
@@ -31,19 +33,15 @@ install:
 before_test:
   - netsh advfirewall firewall add rule name="WinNFSd-IN" dir="in" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
   - netsh advfirewall firewall add rule name="WinNFSd-OUT" dir="out" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
-  - vagrant box update
+  - ps: cd $env:APPVEYOR_BUILD_FOLDER\tests
   - vagrant up
-  - vagrant ssh -c "sudo apt-get -y install git"
-  - vagrant ssh -c "cd ~ && git clone https://github.com/marcharding/connectathon-winnfsd.git"
-  - vagrant ssh -c "cd ~/connectathon-winnfsd && git checkout connectathon-winnfsd && sudo make"
   - mkdir C:\connectathon-winnfsd
+  - ps: copy -Recurse $env:APPVEYOR_BUILD_FOLDER\tests C:\connectathon-winnfsd
   - ps: start-process "C:\projects\winnfsd\src\Release\WinNFSd.exe" "-log off C:\connectathon-winnfsd"
 
 test_script:
-  - vagrant ssh -c "sudo mkdir /vagrant && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:'C:\connectathon-winnfsd' /vagrant"
-  - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -b -o rw,vers=3,udp,nolock 192.168.56.1"
-  - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -g -o rw,vers=3,udp,nolock 192.168.56.1"
-  - vagrant ssh -c "cd /home/vagrant/connectathon-winnfsd/ && export WINNFSD=yes && export HARDLINKS=no && export CIFS=yes && sudo -E ./server -l -o rw,vers=3,udp,nolock 192.168.56.1"
+  - vagrant ssh -c "sudo mkdir /winnfsd && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:'C:\connectathon-winnfsd' /winnfsd"
+  - vagrant ssh -c "sudo -E /winnfsd/tests/bash/tests.sh"
 
 matrix:
   fast_finish: true

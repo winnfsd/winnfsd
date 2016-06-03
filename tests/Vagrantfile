@@ -7,4 +7,5 @@ Vagrant.configure("2") do |c|
     p.customize ["modifyvm", :id, "--memory", "256"]
     p.gui = true
   end
+  c.vm.provision :shell, path: "bootstrap.sh"
 end
