@@ -30,6 +30,12 @@ install:
   - ssh -V
   - ipconfig /all
 
+before_build:
+  - ps: |
+      if ($env:APPVEYOR_REPO_TAG_NAME) { $env:VERSION = $env:APPVEYOR_REPO_TAG_NAME } else { $env:VERSION = $env:APPVEYOR_REPO_BRANCH }
+      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp).replace('{{VERSION}}', $env:VERSION) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp
+      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp).replace('{{HASH}}', $env:APPVEYOR_REPO_COMMIT.Substring(0, 7)) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp
+
 before_test:
   - netsh advfirewall firewall add rule name="WinNFSd-IN" dir="in" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
   - netsh advfirewall firewall add rule name="WinNFSd-OUT" dir="out" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any

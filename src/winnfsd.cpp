@@ -56,13 +56,13 @@ static void printLine(void)
 static void printAbout(void)
 {
     printLine();
-    printf("WinNFSd v2.0.2-beta\n");
+    printf("WinNFSd {{VERSION}} [{{HASH}}]\n");
     printf("Network File System server for Windows\n");
     printf("Copyright (C) 2005 Ming-Yang Kao\n");
     printf("Edited in 2011 by ZeWaren\n");
     printf("Edited in 2013 by Alexander Schneider (Jankowfsky AG)\n");
 	printf("Edited in 2014 2015 by Yann Schepens\n");
-	printf("Edited in 2016 by Peter Philipp (Cando Image GmbH)\n");
+	printf("Edited in 2016 by Peter Philipp (Cando Image GmbH), Marc Harding\n");
     printLine();
 }
 
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
         printUsage(pPath);
         return 1;
     }
-  
+
     g_nUID = g_nGID = 0;
     g_bLogOn = true;
     g_sFileName = NULL;
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
             g_nUID = atoi(argv[++i]);
             g_nGID = atoi(argv[++i]);
         } else if (_stricmp(argv[i], "-log") == 0) {
-            g_bLogOn = _stricmp(argv[++i], "off") != 0;           
+            g_bLogOn = _stricmp(argv[++i], "off") != 0;
         } else if (_stricmp(argv[i], "-pathFile") == 0) {
             g_sFileName = argv[++i];
 
