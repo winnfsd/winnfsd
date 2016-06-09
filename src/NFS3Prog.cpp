@@ -817,7 +817,6 @@ nfsstat3 CNFS3Prog::ProcedureMKDIR(void)
 
 nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 {
-    //TODO
     PrintLog("SYMLINK");
 
     char* path;
@@ -839,8 +838,16 @@ nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
 
     Read(&symlink);
 
-    _In_ LPTSTR lpSymlinkFileName = path;
-    _In_ LPTSTR lpTargetFileName = symlink.symlink_data.path;
+    _In_ LPTSTR lpSymlinkFileName = path; // symlink (full path)
+
+    // TODO: Maybe revisit this later for a cleaner solution
+    // Convert target path to windows path format, maybe this could also be done
+    // in a safer way by a combination of PathRelativePathTo and GetFullPathName.
+    // Without this conversion nested folder symlinks do not work cross platform.
+    std::string strFromChar;
+    strFromChar.append(symlink.symlink_data.path); // target (should be relative path));
+    std::replace(strFromChar.begin(), strFromChar.end(), '/', '\\');
+    _In_ LPTSTR lpTargetFileName = const_cast<LPSTR>(strFromChar.c_str());
 
     std::string fullTargetPath = dirName + std::string("\\") + std::string(lpTargetFileName);
 
