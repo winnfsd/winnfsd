@@ -31,6 +31,9 @@ install:
   - ipconfig /all
 
 before_build:
+  # see http://help.appveyor.com/discussions/problems/4569-the-target-_convertpdbfiles-listed-in-a-beforetargets-attribute-at-c-does-not-exist-in-the-project-and-will-be-ignored
+  - del "C:\Program Files (x86)\MSBuild\12.0\Microsoft.Common.targets\ImportAfter\Xamarin.Common.targets"
+  - del "C:\Program Files (x86)\MSBuild\14.0\Microsoft.Common.targets\ImportAfter\Xamarin.Common.targets"
   - ps: |
       if ($env:APPVEYOR_REPO_TAG_NAME) { $env:VERSION = $env:APPVEYOR_REPO_TAG_NAME } else { $env:VERSION = $env:APPVEYOR_REPO_BRANCH }
       (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp).replace('{{VERSION}}', $env:VERSION) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp
