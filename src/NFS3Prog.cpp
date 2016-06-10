@@ -420,13 +420,15 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
                 nMode |= S_IREAD;
             }
 
-            //if ((new_attributes.mode.mode & 0x80) != 0) {
-                nMode |= S_IWRITE;
-            //}
+            // Always set read and write permissions (deliberately implemented this way)
+            // if ((new_attributes.mode.mode & 0x80) != 0) {
+            nMode |= S_IWRITE;
+            // }
 
-            /*if ((new_attributes.mode.mode & 0x40) != 0) {
-                nMode |= S_IEXEC;
-            }*/
+            // S_IEXEC is not availabile on windows
+            // if ((new_attributes.mode.mode & 0x40) != 0) {
+            //     nMode |= S_IEXEC;
+            // }
 
             if (_chmod(path, nMode) != 0) {
                 stat = NFS3ERR_INVAL;
@@ -434,6 +436,10 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
 
             }
         }   
+
+        // deliberately not implemented because we cannot reflect uid/gid on windows (easliy)
+        if (new_attributes.uid.set_it){}
+        if (new_attributes.gid.set_it){}
 
         // deliberately not implemented
         if (new_attributes.mtime.set_it == SET_TO_CLIENT_TIME){}
