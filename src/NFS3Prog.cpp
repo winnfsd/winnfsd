@@ -641,7 +641,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
         pFile = _fsopen(path, "rb", _SH_DENYWR);
 
         if (pFile != NULL) {
-            fseek(pFile, (long)offset, SEEK_SET);
+            _fseeki64(pFile, offset, SEEK_SET) ;
             count = fread(data.contents, sizeof(char), count, pFile);
             eof = fgetc(pFile) == EOF;
             fclose(pFile);
@@ -699,7 +699,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
         pFile = _fsopen(path, "r+b", _SH_DENYWR);
 
         if (pFile != NULL) {
-            fseek(pFile, (long)offset, SEEK_SET);
+            _fseeki64(pFile, offset, SEEK_SET) ;
             count = fwrite(data.contents, sizeof(char), data.length, pFile);
             fclose(pFile);
         } else {
@@ -1317,7 +1317,7 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
             wtpref = 4096;
             wtmult = 512;
             dtpref = 8192;
-            maxfilesize = 0x7FFFFFFF;
+            maxfilesize = 0x7FFFFFFFFFFFFFFF;
             time_delta.seconds = 1;
             time_delta.nseconds = 0;
             properties = FSF3_CANSETTIME;
