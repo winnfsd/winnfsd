@@ -1320,7 +1320,7 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
             maxfilesize = 0x7FFFFFFFFFFFFFFF;
             time_delta.seconds = 1;
             time_delta.nseconds = 0;
-            properties = FSF3_CANSETTIME;
+            properties = FSF3_LINK | FSF3_SYMLINK | FSF3_CANSETTIME;
         } else {
             stat = NFS3ERR_SERVERFAULT;
         }         
