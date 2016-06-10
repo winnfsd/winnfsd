@@ -1721,12 +1721,12 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, wcc_attr *pAttr)
     }
 
     pAttr->size = data.st_size;
-    pAttr->mtime.seconds = data.st_mtime;
+    pAttr->mtime.seconds = (unsigned int)data.st_mtime;
     pAttr->mtime.nseconds = 0;
 	// TODO: This needs to be tested (not called on my setup)
 	// This seems to be the changed time, not creation time.
     //pAttr->ctime.seconds = data.st_ctime;
-	pAttr->ctime.seconds = data.st_mtime;
+    pAttr->ctime.seconds = (unsigned int)data.st_mtime;
     pAttr->ctime.nseconds = 0;
 
     return true;
@@ -1812,7 +1812,7 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, fattr3 *pAttr)
     return true;
 }
 
-LONGLONG CNFS3Prog::FileTimeToPOSIX(FILETIME ft)
+UINT32 CNFS3Prog::FileTimeToPOSIX(FILETIME ft)
 {
     // takes the last modified date
     LARGE_INTEGER date, adjust;
@@ -1826,5 +1826,5 @@ LONGLONG CNFS3Prog::FileTimeToPOSIX(FILETIME ft)
     date.QuadPart -= adjust.QuadPart;
 
     // converts back from 100-nanoseconds to seconds
-    return date.QuadPart / 10000000;
+    return (unsigned int)(date.QuadPart / 10000000);
 }

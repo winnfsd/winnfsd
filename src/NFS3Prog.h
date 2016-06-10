@@ -296,7 +296,7 @@ class CNFS3Prog : public CRPCProg
     bool GetFileHandle(char *path, nfs_fh3 *pObject);
     bool GetFileAttributesForNFS(char *path, wcc_attr *pAttr);
     bool GetFileAttributesForNFS(char *path, fattr3 *pAttr);
-    LONGLONG FileTimeToPOSIX(FILETIME ft);
+    UINT32 FileTimeToPOSIX(FILETIME ft);
 };
 
 #endif
