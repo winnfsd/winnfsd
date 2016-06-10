@@ -401,6 +401,9 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
     nfsstat3 stat;
     int nMode;
     FILE *pFile;
+    HANDLE hFile;
+    FILETIME fileTime;
+    SYSTEMTIME systemTime;
 
     PrintLog("SETATTR");
     path = GetPath();
@@ -431,6 +434,25 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
 
             }
         }   
+
+        // deliberately not implemented
+        if (new_attributes.mtime.set_it == SET_TO_CLIENT_TIME){}
+        if (new_attributes.atime.set_it == SET_TO_CLIENT_TIME){}
+
+        if (new_attributes.mtime.set_it == SET_TO_SERVER_TIME || new_attributes.atime.set_it == SET_TO_SERVER_TIME){
+            hFile = CreateFile(path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+            if (hFile != INVALID_HANDLE_VALUE) {
+                GetSystemTime(&systemTime);
+                SystemTimeToFileTime(&systemTime, &fileTime);
+                if (new_attributes.mtime.set_it == SET_TO_SERVER_TIME){
+                    SetFileTime(hFile, NULL, NULL, &fileTime);
+                }
+                if (new_attributes.atime.set_it == SET_TO_SERVER_TIME){
+                    SetFileTime(hFile, NULL, &fileTime, NULL);
+                }
+            }
+            CloseHandle(hFile);
+        }
 
         if (new_attributes.size.set_it){
             pFile = _fsopen(path, "r+b", _SH_DENYWR);
