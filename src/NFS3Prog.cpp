@@ -1,3 +1,4 @@
+#pragma comment(lib, "Shlwapi.lib")
 #include "NFSProg.h"
 #include "FileTable.h"
 #include <string.h>
@@ -9,6 +10,7 @@
 #include <windows.h>
 #include <time.h>
 #include <share.h>
+#include "shlwapi.h"
 #define BUFFER_SIZE 1000
 
 enum
@@ -544,6 +546,8 @@ nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
 {
     PrintLog("READLINK");
     char *path;
+    char *pMBBuffer = 0;
+
     post_op_attr symlink_attributes;
     nfspath3 data = nfspath3();
 
@@ -573,26 +577,54 @@ nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
             else {
                 DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, lpOutBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL);
 
-                if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+                if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK || lpOutBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
                 {
-                    /*
-                    printf("Symbolic-Link\n");
-                    size_t slen = lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
-                    WCHAR *szSubName = new WCHAR[slen + 1];
-                    wcsncpy_s(szSubName, slen + 1, &lpOutBuffer.SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer.SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR)], slen);
-                    szSubName[slen] = 0;
-                    delete[] szSubName;
-                    */
+                    if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+                    {
+                        size_t plen = lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
+                        pMBBuffer = (char *)malloc((plen + 1));
+                        WCHAR *szPrintName = new WCHAR[plen + 1];
+                        wcsncpy_s(szPrintName, plen + 1, &lpOutBuffer->SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)], plen);
+                        szPrintName[plen] = 0;
+                        size_t i;
+                        wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
+                        // TODO: Revisit with cleaner solution
+                        if (!PathIsRelative(pMBBuffer))
+                        {
+                            std::string strFromChar;
+                            strFromChar.append("\\\\?\\");
+                            strFromChar.append(pMBBuffer);
+                            char *target = _strdup(strFromChar.c_str());
+                            // remove last folder
+                            char *pos = strrchr(path, '\\');
+                            if (pos != NULL) {
+                                *pos = '\0';
+                            }
+                            PathRelativePathTo(pMBBuffer, path, FILE_ATTRIBUTE_DIRECTORY, target, FILE_ATTRIBUTE_DIRECTORY);
+                        }
+                    }
 
-                    size_t plen = lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
-                    WCHAR *szPrintName = new WCHAR[plen + 1];
-                    wcsncpy_s(szPrintName, plen + 1, &lpOutBuffer->SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)], plen);
-                    szPrintName[plen] = 0;
-                    char *pMBBuffer = (char *)malloc((plen + 1));
-                    size_t i;
-                    wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
+                    // TODO: Revisit with cleaner solution
+                    if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+                    {
+                        size_t slen = lpOutBuffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+                        pMBBuffer = (char *)malloc((slen + 1));
+                        WCHAR *szSubName = new WCHAR[slen + 1];
+                        wcsncpy_s(szSubName, slen + 1, &lpOutBuffer->MountPointReparseBuffer.PathBuffer[lpOutBuffer->MountPointReparseBuffer.SubstituteNameOffset / sizeof(WCHAR)], slen);
+                        szSubName[slen] = 0;
+                        std::wstring wStringTemp(szSubName);
+                        std::string target(wStringTemp.begin(), wStringTemp.end());
+                        target.erase(0, 2);
+                        target.insert(0, 2, '\\');
+                        // remove last folder, see above
+                        char *pos = strrchr(path, '\\');
+                        if (pos != NULL) {
+                            *pos = '\0';
+                        }
+                        PathRelativePathTo(pMBBuffer, path, FILE_ATTRIBUTE_DIRECTORY, target.c_str(), FILE_ATTRIBUTE_DIRECTORY);
+                    }
 
-                    // write path always as /, so windows created symlinks work too
+                    // write path always with / separator, so windows created symlinks work too
                     std::string strFromChar;
                     strFromChar.append(pMBBuffer);
                     std::replace(strFromChar.begin(), strFromChar.end(), '\\', '/');
