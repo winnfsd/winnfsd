@@ -1138,6 +1138,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
     fileid3 fileid;
     filename3 name;
     bool eof;
+    bool bFollows;
     nfsstat3 stat;
     char filePath[MAXPATHLEN];
     int handle;
@@ -1167,13 +1168,11 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
         cookie = 0;
         eof = false;
         handle = _findfirst(filePath, &fileinfo);
+        bFollows = true;
 
         if (handle) {
             do {
-                if (cookie > 0) {
-                    Write(&eof); //eof
-                }
-                    
+                Write(&bFollows); //value follows
                 sprintf_s(filePath, "%s\\%s", path, fileinfo.name);
                 fileid = GetFileID(filePath);
                 Write(&fileid); //file id
@@ -1186,6 +1185,8 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
             _findclose(handle);
         }
 
+        bFollows = false;
+        Write(&bFollows);
         eof = true;
         Write(&eof); //eof
     }
