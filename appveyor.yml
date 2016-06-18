@@ -49,7 +49,7 @@ before_test:
   - ps: start-process "C:\projects\winnfsd\src\Release\WinNFSd.exe" "-log off C:\connectathon-winnfsd"
 
 test_script:
-  - vagrant ssh -c "sudo mkdir /winnfsd && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:'C:\connectathon-winnfsd' /winnfsd"
+  - vagrant ssh -c "sudo mkdir /winnfsd && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:/C/connectathon-winnfsd /winnfsd"
   - vagrant ssh -c "sudo -E /winnfsd/tests/bash/tests.sh"
 
 matrix:
