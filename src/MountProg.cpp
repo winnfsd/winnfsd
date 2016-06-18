@@ -408,6 +408,7 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 					pPath[i] = '/';
 				}
 			}
+			strncpy_s(result, len + 1, pPath, len);
 		} else if (pPath[0] != '/') { //check path alias format
 			printf("Path alias format is incorrect.\n");
 			printf("Please use a path like /exports\n");
