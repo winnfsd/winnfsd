@@ -1,7 +1,7 @@
 WinNFSd
 =======
 
-[![Build status](https://ci.appveyor.com/api/projects/status/qsqr639ub07vnocy?svg=true)](https://ci.appveyor.com/project/MarcHarding/winnfsd)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/winnfsd/winnfsd?svg=true)](https://ci.appveyor.com/project/winnfsd/winnfsd)
 
 Introduction
 ------------
@@ -22,12 +22,13 @@ Posibillity to export more than one folder by using a simple text file.
 Usage
 -------------------
 	=====================================================
-    WinNFSd v2.0
+    WinNFSd v2.1.0
     Network File System server for Windows
     Copyright (C) 2005 Ming-Yang Kao
     Edited in 2011 by ZeWaren
     Edited in 2013 by Alexander Schneider (Jankowfsky AG)
     Edited in 2014 2015 by Yann Schepens
+    Edited in 2016 by Peter Philipp (Cando Image GmbH), Marc Harding
     =====================================================
 
     Usage: WinNFSd.exe [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [export path] [alias path]
