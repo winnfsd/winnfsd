@@ -37,13 +37,13 @@ before_build:
       (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp).replace('{{HASH}}', $env:APPVEYOR_REPO_COMMIT.Substring(0, 7)) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp
 
 before_test:
-  - netsh advfirewall firewall add rule name="WinNFSd-IN" dir="in" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
-  - netsh advfirewall firewall add rule name="WinNFSd-OUT" dir="out" action=allow protocol=any program="C:\projects\winnfsd\src\Release\WinNFSd.exe" profile=any
+  - ps: netsh advfirewall firewall add rule name="WinNFSd-IN" dir="in" action=allow protocol=any program="$env:APPVEYOR_BUILD_FOLDER\src\Release\WinNFSd.exe" profile=any
+  - ps: netsh advfirewall firewall add rule name="WinNFSd-OUT" dir="out" action=allow protocol=any program="$env:APPVEYOR_BUILD_FOLDER\src\Release\WinNFSd.exe" profile=any
   - ps: cd $env:APPVEYOR_BUILD_FOLDER\tests
   - vagrant up
   - mkdir C:\connectathon-winnfsd
   - ps: copy -Recurse $env:APPVEYOR_BUILD_FOLDER\tests C:\connectathon-winnfsd
-  - ps: start-process "C:\projects\winnfsd\src\Release\WinNFSd.exe" "-log off C:\connectathon-winnfsd"
+  - ps: start-process "$env:APPVEYOR_BUILD_FOLDER\src\Release\WinNFSd.exe" "-log off C:\connectathon-winnfsd"
 
 test_script:
   - vagrant ssh -c "sudo mkdir /winnfsd && sudo mount -o 'vers=3,udp,nolock' 192.168.56.1:/C/connectathon-winnfsd /winnfsd"
