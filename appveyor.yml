@@ -2,17 +2,14 @@ cache:
   - C:\Users\appveyor\.vagrant.d
   - C:\downloads
 
-branches:
-  only:
-    - develop
-
 configuration:
   - Release
 
 init:
+  # uncomment for rdp debugging
+  # - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - git config --global core.eol lf
   - git config --global core.autocrlf false
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - ps: mkdir C:\Users\appveyor\.vagrant.d | Out-Null
   - ps: mkdir C:\downloads | Out-Null
 
