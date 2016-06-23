@@ -1,7 +1,7 @@
 WinNFSd
 =======
 
-[![Build status](https://ci.appveyor.com/api/projects/status/github/winnfsd/winnfsd?svg=true)](https://ci.appveyor.com/project/winnfsd/winnfsd)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/winnfsd/winnfsd?svg=true)](https://ci.appveyor.com/project/MarcHarding/winnfsd-6y1xi/branch/master)
 
 Introduction
 ------------
