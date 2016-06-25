@@ -1343,12 +1343,12 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
         obj_attributes.attributes_follow = GetFileAttributesForNFS(path, &obj_attributes.attributes);
 
         if (obj_attributes.attributes_follow) {
-            rtmax = 32768;
-            rtpref = 32768;
-            rtmult = 512;
-            wtmax = 4096;
-            wtpref = 4096;
-            wtmult = 512;
+            rtmax = 65536;
+            rtpref = 65536;
+            rtmult = 4096;
+            wtmax = 65536;
+            wtpref = 65536;
+            wtmult = 4096;
             dtpref = 8192;
             maxfilesize = 0x7FFFFFFFFFFFFFFF;
             time_delta.seconds = 1;
