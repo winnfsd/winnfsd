@@ -4,6 +4,7 @@
 #include "RPCProg.h"
 #include <string>
 #include <windows.h>
+#include <unordered_map>
 
 typedef unsigned __int64 uint64;
 typedef unsigned long uint32;
@@ -297,6 +298,7 @@ class CNFS3Prog : public CRPCProg
     bool GetFileAttributesForNFS(char *path, wcc_attr *pAttr);
     bool GetFileAttributesForNFS(char *path, fattr3 *pAttr);
     UINT32 FileTimeToPOSIX(FILETIME ft);
+    std::unordered_map<int, FILE*> unstableStorageFile;
 };
 
 #endif

@@ -730,30 +730,48 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
     file_wcc.before.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.before.attributes);
 
     if (stat == NFS3_OK) {       
-        pFile = _fsopen(path, "r+b", _SH_DENYWR);
 
-        if (pFile != NULL) {
-            _fseeki64(pFile, offset, SEEK_SET) ;
-            count = fwrite(data.contents, sizeof(char), data.length, pFile);
-            fclose(pFile);
-        } else {
-            char buffer[BUFFER_SIZE];
-            errno_t errorNumber = errno;
-            strerror_s(buffer, BUFFER_SIZE, errorNumber);
-            PrintLog(buffer);
-
-            if (errorNumber == 13) {
-                stat = NFS3ERR_ACCES;
-            } else {
-                stat = NFS3ERR_IO;
+        if (stable == UNSTABLE) {
+            nfs_fh3 handle;
+            GetFileHandle(path, &handle);
+            int handleId = *(unsigned int *)handle.contents;
+            if (unstableStorageFile.count(handleId) == 0){
+                unstableStorageFile.insert(std::make_pair(handleId, _fsopen(path, "r+b", _SH_DENYWR)));
             }
+            pFile = unstableStorageFile[handleId];
+            _fseeki64(pFile, offset, SEEK_SET);
+            count = fwrite(data.contents, sizeof(char), data.length, pFile);
+            // this should not be zero but a timestamp (process start time) instead
+            verf = 0;
+            // we can reuse this, because no physical write has happend
+            file_wcc.after.attributes_follow = file_wcc.before.attributes_follow;
+        } else {
+
+            pFile = _fsopen(path, "r+b", _SH_DENYWR);
+
+            if (pFile != NULL) {
+                _fseeki64(pFile, offset, SEEK_SET) ;
+                count = fwrite(data.contents, sizeof(char), data.length, pFile);
+                fclose(pFile);
+            } else {
+                char buffer[BUFFER_SIZE];
+                errno_t errorNumber = errno;
+                strerror_s(buffer, BUFFER_SIZE, errorNumber);
+                PrintLog(buffer);
+
+                if (errorNumber == 13) {
+                    stat = NFS3ERR_ACCES;
+                } else {
+                    stat = NFS3ERR_IO;
+                }
+            }
+
+            stable = FILE_SYNC;
+            verf = 0;
+
+            file_wcc.after.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.after.attributes);
         }
-
-        stable = FILE_SYNC;
-        verf = 0;
     }
-
-    file_wcc.after.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.after.attributes);
 
     Write(&stat);
     Write(&file_wcc);
@@ -1346,10 +1364,10 @@ nfsstat3 CNFS3Prog::ProcedureFSINFO(void)
 
         if (obj_attributes.attributes_follow) {
             rtmax = 65536;
-            rtpref = 65536;
+            rtpref = 32768;
             rtmult = 4096;
             wtmax = 65536;
-            wtpref = 65536;
+            wtpref = 32768;
             wtmult = 4096;
             dtpref = 8192;
             maxfilesize = 0x7FFFFFFFFFFFFFFF;
@@ -1424,11 +1442,41 @@ nfsstat3 CNFS3Prog::ProcedurePATHCONF(void)
 
 nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
 {
-    //TODO
-    PrintLog("COMMIT");
-    m_nResult = PRC_NOTIMP;
+    char *path;
+    int handleId;
+    offset3 offset;
+    count3 count;
+    wcc_data file_wcc;
+    nfsstat3 stat;
+    nfs_fh3 file;
+    writeverf3 verf;
 
-    return NFS3_OK;
+    PrintLog("COMMIT");
+    path = GetFilePath(file.contents);
+    Read(&file);
+    // offset and count are unused
+    // offset never was anything else than 0 in my tests
+    // count does not matter in the way COMMIT is implemented here
+    // to fulfill the spec this should be improved
+    Read(&offset);
+    Read(&count);
+
+    file_wcc.before.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.before.attributes);
+
+    handleId = *(unsigned int*)file.contents;
+    fclose(unstableStorageFile[handleId]);
+    unstableStorageFile.erase(handleId);
+
+    file_wcc.after.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.after.attributes);
+
+    stat = NFS3_OK;
+    Write(&stat);
+    Write(&file_wcc);
+    // verf should be the timestamp the server startet to notice reboots
+    verf = 0;
+    Write(&verf);
+
+    return stat;
 }
 
 nfsstat3 CNFS3Prog::ProcedureNOIMP(void)
