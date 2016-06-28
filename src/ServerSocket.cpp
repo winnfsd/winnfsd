@@ -43,10 +43,10 @@ bool CServerSocket::Open(int nPort, int nMaxNum)
         return false;
     }
 
-    int snd_buffer = 65536 * 8;
+    int snd_buffer = 65536 * 16;
     int snd_buffer_sizeof = (int)sizeof(snd_buffer);
     setsockopt(m_ServerSocket, SOL_SOCKET, SO_SNDBUF, (char*)&snd_buffer, snd_buffer_sizeof);
-    int rcv_buffer = 65536 * 8;
+    int rcv_buffer = 65536 * 16;
     int rcv_buffer_sizeof = (int)sizeof(rcv_buffer);
     setsockopt(m_ServerSocket, SOL_SOCKET, SO_RCVBUF, (char*)&rcv_buffer, rcv_buffer_sizeof);
 
