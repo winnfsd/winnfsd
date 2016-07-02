@@ -578,31 +578,35 @@ nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
             }
             else {
                 DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, lpOutBuffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytesReturned, NULL);
-
+                std::string finalSymlinkPath;
                 if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK || lpOutBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
                 {
                     if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
                     {
                         size_t plen = lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
-                        pMBBuffer = (char *)malloc((plen + 1));
                         WCHAR *szPrintName = new WCHAR[plen + 1];
                         wcsncpy_s(szPrintName, plen + 1, &lpOutBuffer->SymbolicLinkReparseBuffer.PathBuffer[lpOutBuffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)], plen);
                         szPrintName[plen] = 0;
-                        size_t i;
-                        wcstombs_s(&i, pMBBuffer, (plen + 1), szPrintName, (plen + 1));
+                        std::wstring wStringTemp(szPrintName);
+                        delete[] szPrintName;
+                        std::string cPrintName(wStringTemp.begin(), wStringTemp.end());
+                        finalSymlinkPath.assign(cPrintName);
                         // TODO: Revisit with cleaner solution
-                        if (!PathIsRelative(pMBBuffer))
+                        if (!PathIsRelative(cPrintName.c_str()))
                         {
                             std::string strFromChar;
                             strFromChar.append("\\\\?\\");
-                            strFromChar.append(pMBBuffer);
+                            strFromChar.append(cPrintName);
                             char *target = _strdup(strFromChar.c_str());
                             // remove last folder
                             char *pos = strrchr(path, '\\');
                             if (pos != NULL) {
                                 *pos = '\0';
                             }
-                            PathRelativePathTo(pMBBuffer, path, FILE_ATTRIBUTE_DIRECTORY, target, FILE_ATTRIBUTE_DIRECTORY);
+                            char szOut[MAX_PATH] = "";
+                            PathRelativePathTo(szOut, path, FILE_ATTRIBUTE_DIRECTORY, target, FILE_ATTRIBUTE_DIRECTORY);
+                            std::string symlinkPath(szOut);
+                            finalSymlinkPath.assign(symlinkPath);
                         }
                     }
 
@@ -610,11 +614,11 @@ nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
                     if (lpOutBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
                     {
                         size_t slen = lpOutBuffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
-                        pMBBuffer = (char *)malloc((slen + 1));
                         WCHAR *szSubName = new WCHAR[slen + 1];
                         wcsncpy_s(szSubName, slen + 1, &lpOutBuffer->MountPointReparseBuffer.PathBuffer[lpOutBuffer->MountPointReparseBuffer.SubstituteNameOffset / sizeof(WCHAR)], slen);
                         szSubName[slen] = 0;
                         std::wstring wStringTemp(szSubName);
+                        delete[] szSubName;
                         std::string target(wStringTemp.begin(), wStringTemp.end());
                         target.erase(0, 2);
                         target.insert(0, 2, '\\');
@@ -623,18 +627,16 @@ nfsstat3 CNFS3Prog::ProcedureREADLINK(void)
                         if (pos != NULL) {
                             *pos = '\0';
                         }
-                        PathRelativePathTo(pMBBuffer, path, FILE_ATTRIBUTE_DIRECTORY, target.c_str(), FILE_ATTRIBUTE_DIRECTORY);
+                        char szOut[MAX_PATH] = "";
+                        PathRelativePathTo(szOut, path, FILE_ATTRIBUTE_DIRECTORY, target.c_str(), FILE_ATTRIBUTE_DIRECTORY);
+                        std::string symlinkPath = szOut;
+                        finalSymlinkPath.assign(symlinkPath);
                     }
 
                     // write path always with / separator, so windows created symlinks work too
-                    std::string strFromChar;
-                    strFromChar.append(pMBBuffer);
-                    std::replace(strFromChar.begin(), strFromChar.end(), '\\', '/');
-                    char *result = _strdup(strFromChar.c_str());
-
+                    std::replace(finalSymlinkPath.begin(), finalSymlinkPath.end(), '\\', '/');
+                    char *result = _strdup(finalSymlinkPath.c_str());
                     data.Set(result);
-                    free(pMBBuffer);
-                    free(result);
                 }
                 free(lpOutBuffer);
             }
