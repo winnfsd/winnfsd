@@ -46,7 +46,11 @@ bool CServerSocket::Open(int nPort, int nMaxNum)
     memset(&localAddr, 0, sizeof(localAddr));
     localAddr.sin_family = AF_INET;
     localAddr.sin_port = htons(m_nPort);
-    localAddr.sin_addr.s_addr = INADDR_ANY;
+	localAddr.sin_addr.s_addr = inet_addr(g_sInAddr);
+	if (localAddr.sin_addr.s_addr == INADDR_NONE) {
+		g_sInAddr = "0.0.0.0";
+		localAddr.sin_addr.s_addr = INADDR_ANY;
+	}
 
     if (bind(m_ServerSocket, (struct sockaddr *)&localAddr, sizeof(localAddr)) == SOCKET_ERROR)	{
         closesocket(m_ServerSocket);

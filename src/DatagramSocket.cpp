@@ -40,7 +40,11 @@ bool CDatagramSocket::Open(int nPort)
     memset(&localAddr, 0, sizeof(localAddr));
     localAddr.sin_family = AF_INET;
     localAddr.sin_port = htons(m_nPort);
-    localAddr.sin_addr.s_addr = INADDR_ANY;
+	localAddr.sin_addr.s_addr = inet_addr(g_sInAddr);
+	if (localAddr.sin_addr.s_addr == INADDR_NONE) {
+		g_sInAddr = "0.0.0.0";
+		localAddr.sin_addr.s_addr = INADDR_ANY;
+	}
 
     if (bind(m_Socket, (struct sockaddr *)&localAddr, sizeof(struct sockaddr)) == SOCKET_ERROR) {
         closesocket(m_Socket);

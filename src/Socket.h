@@ -5,6 +5,8 @@
 #include "SocketStream.h"
 #include <winsock.h>
 
+extern char *g_sInAddr;
+
 class CSocket
 {
     public:

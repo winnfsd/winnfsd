@@ -1,3 +1,4 @@
+#include "Socket.h"
 #include "RPCServer.h"
 #include "PortmapProg.h"
 #include "NFSProg.h"
@@ -221,7 +222,7 @@ static void start(std::vector<std::vector<std::string>> paths)
 
 	if (bSuccess) {
 		localHost = gethostbyname("");
-		printf("Local IP = %s\n", inet_ntoa(*(struct in_addr *)*localHost->h_addr_list));  //local address
+		printf("Listening on %s\n", g_sInAddr);  //local address
 		inputCommand();  //wait for commands
 	}
 
@@ -251,6 +252,7 @@ int main(int argc, char *argv[])
     g_nUID = g_nGID = 0;
     g_bLogOn = true;
     g_sFileName = NULL;
+	g_sInAddr = "0.0.0.0";
 
     for (int i = 1; i < argc; i++) {//parse parameters
         if (_stricmp(argv[i], "-id") == 0) {
@@ -258,7 +260,9 @@ int main(int argc, char *argv[])
             g_nGID = atoi(argv[++i]);
         } else if (_stricmp(argv[i], "-log") == 0) {
             g_bLogOn = _stricmp(argv[++i], "off") != 0;
-        } else if (_stricmp(argv[i], "-pathFile") == 0) {
+        } else if (_stricmp(argv[i], "-addr") == 0) {
+			g_sInAddr = argv[++i];
+		} else if (_stricmp(argv[i], "-pathFile") == 0) {
             g_sFileName = argv[++i];
 
 			if (g_MountProg.SetPathFile(g_sFileName) == false) {

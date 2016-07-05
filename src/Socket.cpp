@@ -1,6 +1,8 @@
 #include "Socket.h"
 #include <process.h>
 
+char *g_sInAddr;
+
 static unsigned int __stdcall ThreadProc(void *lpParameter)
 {
     CSocket *pSocket;
