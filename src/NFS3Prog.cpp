@@ -237,7 +237,7 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
 	time(&now);
 	localtime_s(&current, &now);
 
-	PrintLog("[%i:%i:%i] NFS ", current.tm_hour, current.tm_min, current.tm_sec);
+	PrintLog("[%02d:%02d:%02d] NFS ", current.tm_hour, current.tm_min, current.tm_sec);
 
     if (pParam->nProc >= sizeof(pf) / sizeof(PPROC)) {
         ProcedureNOIMP();
