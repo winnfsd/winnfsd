@@ -464,9 +464,11 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
 
         if (new_attributes.size.set_it){
             pFile = _fsopen(path, "r+b", _SH_DENYWR);
-            int filedes = _fileno(pFile);
-            _chsize_s(filedes, new_attributes.size.size);
-            fclose(pFile);
+            if (pFile != NULL) {
+                int filedes = _fileno(pFile);
+                _chsize_s(filedes, new_attributes.size.size);
+                fclose(pFile);
+            }
         }
     }
 
@@ -1141,8 +1143,9 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
     bool bFollows;
     nfsstat3 stat;
     char filePath[MAXPATHLEN];
-    int handle;
+    int handle, nFound;
     struct _finddata_t fileinfo;
+    unsigned int i, j;
 
     PrintLog("READDIR");
     path = GetPath();
@@ -1165,29 +1168,43 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
     if (stat == NFS3_OK) {
         Write(&cookieverf);
         sprintf_s(filePath, "%s\\*", path);
-        cookie = 0;
-        eof = false;
+        eof = true;
         handle = _findfirst(filePath, &fileinfo);
         bFollows = true;
 
         if (handle) {
-            do {
-                Write(&bFollows); //value follows
-                sprintf_s(filePath, "%s\\%s", path, fileinfo.name);
-                fileid = GetFileID(filePath);
-                Write(&fileid); //file id
-                name.Set(fileinfo.name);
-                Write(&name); //name
-                ++cookie;
-                Write(&cookie); //cookie
-            } while (_findnext(handle, &fileinfo) == 0);
+            nFound = 0;
+
+            for (i = (unsigned int)cookie; i > 0; i--) {
+                nFound = _findnext(handle, &fileinfo);
+            }
+
+            // TODO: Implement this workaround correctly with the
+            // count variable and not a fixed threshold of 10
+            if (nFound == 0) {
+                j = 10;
+
+                do {
+                    Write(&bFollows); //value follows
+                    sprintf_s(filePath, "%s\\%s", path, fileinfo.name);
+                    fileid = GetFileID(filePath);
+                    Write(&fileid); //file id
+                    name.Set(fileinfo.name);
+                    Write(&name); //name
+                    ++cookie;
+                    Write(&cookie); //cookie
+                    if (--j == 0) {
+                        eof = false;
+                        break;
+                    }
+                } while (_findnext(handle, &fileinfo) == 0);
+            }
 
             _findclose(handle);
         }
 
         bFollows = false;
         Write(&bFollows);
-        eof = true;
         Write(&eof); //eof
     }
 
