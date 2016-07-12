@@ -1481,12 +1481,17 @@ nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
     file_wcc.before.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.before.attributes);
 
     handleId = *(unsigned int*)file.contents;
-    fclose(unstableStorageFile[handleId]);
-    unstableStorageFile.erase(handleId);
+
+    if (unstableStorageFile[handleId] != NULL) {
+        fclose(unstableStorageFile[handleId]);
+        unstableStorageFile.erase(handleId);
+        stat = NFS3_OK;
+    } else {
+        stat = NFS3ERR_IO;
+    }
 
     file_wcc.after.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.after.attributes);
 
-    stat = NFS3_OK;
     Write(&stat);
     Write(&file_wcc);
     // verf should be the timestamp the server startet to notice reboots
