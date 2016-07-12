@@ -104,13 +104,33 @@ IOutputStream *CSocket::GetOutputStream(void)
 
 void CSocket::Run(void)
 {
-    int nSize, nBytes;
+    int nSize, nBytes, fragmentHeaderMsb, fragmentHeaderLengthBytes;
+    unsigned long fragmentHeader;
 
     nSize = sizeof(m_RemoteAddr);
 
     for (;;) {
         if (m_nType == SOCK_STREAM) {
-            nBytes = recv(m_Socket, (char *)m_SocketStream.GetInput(), m_SocketStream.GetBufferSize(), 0);
+            // When using tcp we cannot ensure that everything we need is already
+            // received. When using RCP over TCP a fragment header is added to
+            // work around this. The MSB of the fragment header determines if the
+            // fragment is complete (not used here) and the remaining bits define the
+            // length of the rpc call (this is what we want)
+            nBytes = recv(m_Socket, (char *)m_SocketStream.GetInput(), 4, MSG_PEEK);
+
+            // only if at least 4 bytes are availabe (the fragment header) we can continue
+            if (nBytes == 4){
+                m_SocketStream.SetInputSize(4);
+                m_SocketStream.Read(&fragmentHeader);
+                fragmentHeaderMsb = (int)(fragmentHeader & 0x80000000);
+                fragmentHeaderLengthBytes = (int)(fragmentHeader ^ 0x80000000) + 4;
+                while (nBytes != fragmentHeaderLengthBytes) {
+                    nBytes = recv(m_Socket, (char *)m_SocketStream.GetInput(), fragmentHeaderLengthBytes, MSG_PEEK);
+                }
+                nBytes = recv(m_Socket, (char *)m_SocketStream.GetInput(), fragmentHeaderLengthBytes, 0);
+            } else {
+                nBytes = 0;
+            }
         } else if (m_nType == SOCK_DGRAM) {
             nBytes = recvfrom(m_Socket, (char *)m_SocketStream.GetInput(), m_SocketStream.GetBufferSize(), 0, (struct sockaddr *)&m_RemoteAddr, &nSize);
         }
