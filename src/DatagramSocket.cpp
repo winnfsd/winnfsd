@@ -30,10 +30,10 @@ bool CDatagramSocket::Open(int nPort)
         return false;
     }
 
-    int snd_buffer = 65536 * 16;
+    int snd_buffer = 1024 * 1024 * 8;
     int snd_buffer_sizeof = (int)sizeof(snd_buffer);
     setsockopt(m_Socket, SOL_SOCKET, SO_SNDBUF, (char*)&snd_buffer, snd_buffer_sizeof);
-    int rcv_buffer = 65536 * 16;
+    int rcv_buffer = 1024 * 1024 * 2;
     int rcv_buffer_sizeof = (int)sizeof(rcv_buffer);
     setsockopt(m_Socket, SOL_SOCKET, SO_RCVBUF, (char*)&rcv_buffer, rcv_buffer_sizeof);
 
