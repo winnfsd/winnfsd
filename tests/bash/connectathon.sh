@@ -9,3 +9,4 @@ export HARDLINKS=no
 export CIFS=yes
 export GB2=yes
 sudo -E ./server -o rw,vers=3,udp,nolock 192.168.56.1
+sudo -E ./server -o rw,vers=3,tcp,nolock 192.168.56.1
