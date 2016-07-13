@@ -1469,8 +1469,9 @@ nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
     writeverf3 verf;
 
     PrintLog("COMMIT");
-    path = GetFilePath(file.contents);
     Read(&file);
+    path = GetFilePath(file.contents);
+
     // offset and count are unused
     // offset never was anything else than 0 in my tests
     // count does not matter in the way COMMIT is implemented here
