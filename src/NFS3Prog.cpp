@@ -1822,6 +1822,10 @@ bool CNFS3Prog::GetFileAttributesForNFS(char *path, wcc_attr *pAttr)
 {
     struct stat data;
 
+    if (path == NULL) {
+        return false;
+    }
+
     if (stat(path, &data) != 0) {
         return false;
     }
