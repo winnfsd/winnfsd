@@ -4,7 +4,6 @@
 #include "MountProg.h"
 #include "ServerSocket.h"
 #include "DatagramSocket.h"
-//#include <unistd.h>
 #include <stdio.h>
 #include <direct.h>
 #include <iostream>
