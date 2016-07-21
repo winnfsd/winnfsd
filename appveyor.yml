@@ -1,7 +1,3 @@
-cache:
-  - C:\Users\appveyor\.vagrant.d
-  - C:\downloads
-
 configuration:
   - Release
 
@@ -16,12 +12,14 @@ init:
 install:
   - ps: |
       cd C:\downloads
-      if (-Not (Test-Path C:\downloads\VirtualBox-5.0.20-106931-Win.exe)){ Start-FileDownload "http://download.virtualbox.org/virtualbox/5.0.20/VirtualBox-5.0.20-106931-Win.exe" }
-      if (-Not (Test-Path C:\downloads\vagrant_1.8.1.msi)){ Start-FileDownload "https://releases.hashicorp.com/vagrant/1.8.1/vagrant_1.8.1.msi" }
-      Start-Process -FilePath "VirtualBox-5.0.20-106931-Win.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\VBox" -Wait
-      Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_1.8.1.msi /qb TARGETDIR=C:\Vagrant" -Wait
+      Start-FileDownload "http://download.virtualbox.org/virtualbox/5.1.2/VirtualBox-5.1.2-108956-Win.exe"
+      Start-FileDownload "http://download.virtualbox.org/virtualbox/5.1.2/Oracle_VM_VirtualBox_Extension_Pack-5.1.2-108956.vbox-extpack"
+      Start-FileDownload "https://releases.hashicorp.com/vagrant/1.8.5/vagrant_1.8.5.msi"
+      Start-Process -FilePath "VirtualBox-5.1.2-108956-Win.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\VBox" -Wait
+      Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_1.8.5.msi /qb TARGETDIR=C:\Vagrant" -Wait
       cd $env:APPVEYOR_BUILD_FOLDER
   - set PATH=C:\Vagrant\HashiCorp\Vagrant\bin;C:\VBox;%PATH%
+  - VBoxManage extpack install C:\downloads\Oracle_VM_VirtualBox_Extension_Pack-5.1.2-108956.vbox-extpack
   - vagrant -v
   - VBoxManage -v
   - ssh -V
@@ -54,3 +52,7 @@ matrix:
 
 artifacts:
   - path: src/Release/winnfsd.exe
+
+# uncomment for rdp debugging
+# on_finish:
+# - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
