@@ -741,8 +741,22 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
                 unstableStorageFile.insert(std::make_pair(handleId, _fsopen(path, "r+b", _SH_DENYWR)));
             }
             pFile = unstableStorageFile[handleId];
-            _fseeki64(pFile, offset, SEEK_SET);
-            count = fwrite(data.contents, sizeof(char), data.length, pFile);
+            if (pFile != NULL) {
+                _fseeki64(pFile, offset, SEEK_SET);
+                count = fwrite(data.contents, sizeof(char), data.length, pFile);
+            } else {
+                char buffer[BUFFER_SIZE];
+                errno_t errorNumber = errno;
+                strerror_s(buffer, BUFFER_SIZE, errorNumber);
+                PrintLog(buffer);
+
+                if (errorNumber == 13) {
+                    stat = NFS3ERR_ACCES;
+                }
+                else {
+                    stat = NFS3ERR_IO;
+                }
+            }
             // this should not be zero but a timestamp (process start time) instead
             verf = 0;
             // we can reuse this, because no physical write has happend
