@@ -27,6 +27,7 @@ class CPortmapProg : public CRPCProg
     IOutputStream *m_pOutStream;
 
     bool ProcedureGETPORT(void);
+    bool ProcedureDUMP(void);
 };
 
 #endif
