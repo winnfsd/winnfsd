@@ -126,8 +126,7 @@ void CServerSocket::Run(void)
                     break;
                 }
             }
-
-            assert(i < m_nMaxNum);
         }
+
     }
 }
