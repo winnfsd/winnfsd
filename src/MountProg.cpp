@@ -3,6 +3,7 @@
 #include <string.h>
 #include <map>
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <string>
 #include <direct.h>
@@ -299,18 +300,32 @@ bool CMountProg::ReadPathsFromFile(char* sFileName)
 	std::ifstream pathFile(sFileName);
 
 	if (pathFile.is_open()) {
-		std::string line;
+		std::string line, path;
+		std::vector<std::string> paths;
+		std::istringstream ss;
 
 		while (std::getline(pathFile, line)) {
-			char *pCurPath = (char*)malloc(line.size() + 1);
-			pCurPath = (char*)line.c_str();
+			ss.clear();
+			paths.clear();
+			ss.str(line);
 
+			// split path and alias separated by '>'
+			while (std::getline(ss, path, '>')) {
+				paths.push_back(path);
+			}
+			if (paths.size() < 1) {
+				continue;
+			}
+			if (paths.size() < 2) {
+				paths.push_back(paths[0]);
+			}
+
+			char *pCurPath = (char*)malloc(paths[0].size() + 1);
+			pCurPath = (char*)paths[0].c_str();
+			
 			if (pCurPath != NULL) {
-				char curPathAlias[MAXPATHLEN];
-				strcpy_s(curPathAlias, pCurPath);
-				char *pCurPathAlias = (char*)malloc(strlen(curPathAlias));
-				pCurPathAlias = curPathAlias;
-
+				char *pCurPathAlias = (char*)malloc(paths[1].size() + 1);
+				pCurPathAlias = (char*)paths[1].c_str();
 				Export(pCurPath, pCurPathAlias);
 			}
 		}
