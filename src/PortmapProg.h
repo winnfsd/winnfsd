@@ -26,8 +26,19 @@ class CPortmapProg : public CRPCProg
     IInputStream *m_pInStream;
     IOutputStream *m_pOutStream;
 
-    bool ProcedureGETPORT(void);
-    bool ProcedureDUMP(void);
+    void ProcedureNOIMP(void);
+    void ProcedureNULL(void);
+    void ProcedureSET(void);
+    void ProcedureUNSET(void);
+    void ProcedureGETPORT(void);
+    void ProcedureDUMP(void);
+    void ProcedureCALLIT(void);
+
+    private:
+    ProcessParam *m_pParam;
+    int m_nResult;
+
+    void Write(PORTMAP_HEADER header);
 };
 
 #endif
