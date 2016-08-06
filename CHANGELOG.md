@@ -1,3 +1,14 @@
+## 2.2.0 (August 6, 2016)
+
+**BUG FIXES & IMPROVEMENTS:**
+
+- Faster write speed (between 10 to 100 times faster) due to increased buffer size
+- Added async write procedure for even faster writes for big files
+- Fixed TCP implementation
+- Added DUMP to PROG_MOUNT command for boot2docker and osx compatibility
+- Added an alias option to the pathfile format (thanks to eidng8)
+- Added an command line option to only listen on one interface (thanks to eidng8)
+
 ## 2.1.1 (July 10, 2016)
 
 **BUG FIXES & IMPROVEMENTS:**
