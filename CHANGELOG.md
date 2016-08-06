@@ -1,3 +1,10 @@
+## 2.1.1 (July 10, 2016)
+
+**BUG FIXES & IMPROVEMENTS:**
+
+- Fix for slow READDIR
+- Fixed odd log timestamp formatting
+
 ## 2.1.0 (June 23, 2016)
 
 Many things have been fixed and WinNFSd works much better in everyday situations now.
