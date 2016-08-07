@@ -36,7 +36,7 @@ static CMountProg g_MountProg;
 static void printUsage(char *pExe)
 {
     printf("\n");
-    printf("Usage: %s [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [export path] [alias path]\n\n", pExe);
+    printf("Usage: %s [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [-addr <ip>] [export path] [alias path]\n\n", pExe);
     printf("At least a file or a path is needed\n");
     printf("For example:\n");
     printf("On Windows> %s d:\\work\n", pExe);
@@ -44,6 +44,9 @@ static void printUsage(char *pExe)
     printf("For another example:\n");
     printf("On Windows> %s d:\\work /exports\n", pExe);
     printf("On Linux> mount -t nfs 192.168.12.34:/exports\n\n");
+    printf("Another example where WinNFSd is only bound to a specific interface:\n");
+    printf("On Windows> %s -addr 192.168.12.34 d:\\work /exports\n", pExe);
+    printf("On Linux> mount - t nfs 192.168.12.34: / exports\n\n");
     printf("Use \".\" to export the current directory (works also for -filePath):\n");
     printf("On Windows> %s . /exports\n", pExe);
 }
