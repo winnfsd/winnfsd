@@ -133,7 +133,7 @@ char *CMountProg::GetClientAddr(int nIndex)
 
 int CMountProg::Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam)
 {
-    static PPROC pf[] = { &CMountProg::ProcedureNULL, &CMountProg::ProcedureMNT, &CMountProg::ProcedureNOIMP, &CMountProg::ProcedureUMNT };
+    static PPROC pf[] = { &CMountProg::ProcedureNULL, &CMountProg::ProcedureMNT, &CMountProg::ProcedureNOIMP, &CMountProg::ProcedureUMNT, &CMountProg::ProcedureUMNTALL, &CMountProg::ProcedureEXPORT };
 
     PrintLog("MOUNT ");
 
@@ -211,6 +211,40 @@ void CMountProg::ProcedureUMNT(void)
             }
         }
     }
+}
+
+void CMountProg::ProcedureEXPORT(void)
+{
+	PrintLog("EXPORT");
+
+	for (auto const &exportedPath : m_PathMap) {
+		const char* path = exportedPath.first.c_str();
+		int length = strlen(path);
+		// dirpath
+		m_pOutStream->Write(1);
+		m_pOutStream->Write(length);
+		m_pOutStream->Write(const_cast<char*>(path), length);
+		int fillBytes = (length % 4);
+		if (fillBytes > 0) {
+			fillBytes = 4 - fillBytes;
+			m_pOutStream->Write(".", fillBytes);
+		}
+		// groups
+		m_pOutStream->Write(1);
+		m_pOutStream->Write(1);
+		m_pOutStream->Write("*", 1);
+		m_pOutStream->Write("...", 3);
+		m_pOutStream->Write(0);
+	}
+
+	m_pOutStream->Write(0);
+	m_pOutStream->Write(0);
+}
+
+void CMountProg::ProcedureUMNTALL(void)
+{
+	PrintLog("UMNTALL NOIMP");
+	m_nResult = PRC_NOTIMP;
 }
 
 void CMountProg::ProcedureNOIMP(void)
