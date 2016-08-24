@@ -269,13 +269,28 @@ bool CMountProg::GetPath(char **returnPath)
 	typedef std::map<std::string, std::string>::iterator it_type;
 	m_pInStream->Read(path, nSize);
 
+	// TODO: this whole method is quite ugly and ripe for refactoring
+	// strip slashes
+	std::string pathTemp(path);
+	pathTemp.erase(pathTemp.find_last_not_of("/\\") + 1);
+	std::copy(pathTemp.begin(), pathTemp.end(), path);
+	path[pathTemp.size()] = '\0';
+
 	for (it_type iterator = m_PathMap.begin(); iterator != m_PathMap.end(); iterator++) {
-		char* pathAlias = const_cast<char*>(iterator->first.c_str());
-		char* windowsPath = const_cast<char*>(iterator->second.c_str());
+
+		// strip slashes
+		std::string pathAliasTemp(iterator->first.c_str());
+		pathAliasTemp.erase(pathAliasTemp.find_last_not_of("/\\") + 1);
+		char* pathAlias = const_cast<char*>(pathAliasTemp.c_str());
+
+		// strip slashes
+		std::string windowsPathTemp(iterator->second.c_str());
+		windowsPathTemp.erase(windowsPathTemp.find_last_not_of("/\\") + 1);
+		char* windowsPath = const_cast<char*>(windowsPathTemp.c_str());
 
 		size_t aliasPathSize = strlen(pathAlias);
 		size_t windowsPathSize = strlen(windowsPath);
-		size_t requestedPathSize = nSize;
+		size_t requestedPathSize = pathTemp.size();
 
 		if ((requestedPathSize > aliasPathSize) && (strncmp(path, pathAlias, aliasPathSize) == 0)) {
 			foundPath = true;
