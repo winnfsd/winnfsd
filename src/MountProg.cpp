@@ -268,6 +268,7 @@ bool CMountProg::GetPath(char **returnPath)
 
 	typedef std::map<std::string, std::string>::iterator it_type;
 	m_pInStream->Read(path, nSize);
+	path[nSize] = '\0';
 
 	// TODO: this whole method is quite ugly and ripe for refactoring
 	// strip slashes
