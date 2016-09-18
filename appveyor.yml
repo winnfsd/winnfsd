@@ -33,6 +33,13 @@ before_build:
       if ($env:APPVEYOR_REPO_TAG_NAME) { $env:VERSION = $env:APPVEYOR_REPO_TAG_NAME } else { $env:VERSION = $env:APPVEYOR_REPO_BRANCH }
       (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp).replace('{{VERSION}}', $env:VERSION) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp
       (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp).replace('{{HASH}}', $env:APPVEYOR_REPO_COMMIT.Substring(0, 7)) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\winnfsd.cpp
+  # patch assembly info
+  - ps: |
+      $env:LAST_TAG = "$(git describe --abbrev=0 --tags).0"
+      $env:LAST_TAG_FULL = "$(git describe --tags --always HEAD)"
+      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1,0,0.0', ($env:LAST_TAG).replace('.',',')) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
+      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1.0.0.0-000000', $env:LAST_TAG_FULL) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
+      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1.0.0.0', $env:LAST_TAG) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
 
 before_test:
   - ps: netsh advfirewall firewall add rule name="WinNFSd-IN" dir="in" action=allow protocol=any program="$env:APPVEYOR_BUILD_FOLDER\src\Release\WinNFSd.exe" profile=any
