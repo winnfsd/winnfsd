@@ -37,7 +37,7 @@ before_build:
   - ps: |
       $env:LAST_TAG = "$(git describe --abbrev=0 --tags).0"
       $env:LAST_TAG_FULL = "$(git describe --tags --always HEAD)"
-      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1,0,0.0', ($env:LAST_TAG).replace('.',',')) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
+      (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1,0,0,0', ($env:LAST_TAG).replace('.',',')) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
       (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1.0.0.0-000000', $env:LAST_TAG_FULL) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
       (Get-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc).replace('1.0.0.0', $env:LAST_TAG) | Set-Content $env:APPVEYOR_BUILD_FOLDER\src\WinNFSd.rc
 
@@ -61,5 +61,5 @@ artifacts:
   - path: src/Release/winnfsd.exe
 
 # uncomment for rdp debugging
-# on_finish:
-# - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+on_finish:
+- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
