@@ -87,7 +87,7 @@ void CMountProg::Export(char *path, char *pathAlias)
 			m_PathMap[pathAlias] = formattedPath;
 			printf("Path #%i is: %s, path alias is: %s\n", m_PathMap.size(), path, pathAlias);
 		} else {
-			printf("Path %s with path alias  %s already known\n", path, pathAlias);
+			printf("Path %s with path alias %s already known\n", path, pathAlias);
 		}
 
 		free(formattedPath);
