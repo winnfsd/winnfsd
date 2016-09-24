@@ -286,7 +286,10 @@ bool CMountProg::GetPath(char **returnPath)
 
 		// strip slashes
 		std::string windowsPathTemp(iterator->second.c_str());
-		windowsPathTemp.erase(windowsPathTemp.find_last_not_of("/\\") + 1);
+		// if it is a drive letter, e.g. D:\ keep the slash
+		if (windowsPathTemp.substr(windowsPathTemp.size() - 2) != ":\\") {
+			windowsPathTemp.erase(windowsPathTemp.find_last_not_of("/\\") + 1);
+		}
 		char* windowsPath = const_cast<char*>(windowsPathTemp.c_str());
 
 		size_t aliasPathSize = strlen(pathAlias);
@@ -370,6 +373,12 @@ bool CMountProg::ReadPathsFromFile(char* sFileName)
 				paths.push_back(paths[0]);
 			}
 
+			// clean path, trim spaces and slashes (except drive letter)
+			paths[0].erase(paths[0].find_last_not_of(" ") + 1);
+			if (paths[0].substr(paths[0].size() - 2) != ":\\") {
+				paths[0].erase(paths[0].find_last_not_of("/\\ ") + 1);
+			}
+
 			char *pCurPath = (char*)malloc(paths[0].size() + 1);
 			pCurPath = (char*)paths[0].c_str();
 			
@@ -399,6 +408,16 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 
 	//Remove tail spaces
 	while (len > 0 && *(pPath + len - 1) == ' ') {
+		len--;
+	}
+
+	//Remove windows tail slashes (except when its only a drive letter)
+	while (len > 0 && *(pPath + len - 2) != ':' && *(pPath + len - 1) == '\\') {
+		len--;
+	}
+
+	//Remove unix tail slashes
+	while (len > 0 && *(pPath + len - 1) == '/') {
 		len--;
 	}
 
