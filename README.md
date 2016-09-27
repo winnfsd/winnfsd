@@ -20,7 +20,7 @@ The export of multiple folders is also possible. Just put the shared foldes and 
 
 ```
 C:\path\to\a\mount > /alias
-C:\path\to\another\mount /another-alias
+C:\path\to\another\mount > /another-alias
 ```
 
 Then start winnfsd.exe like this:
