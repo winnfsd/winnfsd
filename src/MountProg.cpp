@@ -417,7 +417,7 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 	}
 
 	//Remove unix tail slashes
-	while (len > 0 && *(pPath + len - 1) == '/') {
+	while (len > 1 && *(pPath + len - 1) == '/') {
 		len--;
 	}
 
