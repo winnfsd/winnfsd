@@ -1,3 +1,12 @@
+## 2.3.0 (September 28, 2016)
+
+**BUG FIXES & IMPROVEMENTS:**
+
+- Implemented EXPORT to PROG_MOUNT, so showmount -e ip now works ([Kodi](https://kodi.tv) now works fine)
+- Fixed some bugs with path aliases (see #30)
+- Added assembly infos (see #31)
+- Whole drives can now be shared
+
 ## 2.2.0 (August 6, 2016)
 
 **BUG FIXES & IMPROVEMENTS:**
