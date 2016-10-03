@@ -25,11 +25,11 @@ class CMountProg : public CRPCProg
     char *GetClientAddr(int nIndex);
     int GetMountNumber(void);
     int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
-	char *FormatPath(char *pPath, pathFormats format);
+	std::string FormatPath(char *pPath, pathFormats format);
 
     protected:
     int m_nMountNum;
-	char *m_pPathFile;
+	std::string m_PathFile;
 	std::map<std::string, std::string> m_PathMap;
     char *m_pClientAddr[MOUNT_NUM_MAX];
     IInputStream *m_pInStream;
@@ -44,9 +44,9 @@ class CMountProg : public CRPCProg
     ProcessParam *m_pParam;
     int m_nResult;
 
-	bool GetPath(char **returnPath);
+	bool GetPath(std::string &returnPath);
     char *GetPath(int &pathNumber);
-	bool ReadPathsFromFile(char* sFileName);
+	bool ReadPathsFromFile(const char* sFileName);
 };
 
 #endif

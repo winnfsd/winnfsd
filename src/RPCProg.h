@@ -10,10 +10,6 @@
 /* The maximum number of bytes in a file name argument. */
 #define MAXNAMELEN 255
 
-/* The size in bytes of the opaque file handle. */
-#define FHSIZE 32
-#define NFS3_FHSIZE 64
-
 enum
 {
     PRC_OK,

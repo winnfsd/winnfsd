@@ -1,3 +1,11 @@
+## 2.4.0 (September 7,2016)
+
+**BUG FIXES & IMPROVEMENTS:**
+- Many memory leaks fixed (char * replaced with std::string) also memory was not freed
+- Added nfs3fhsize32 option. Some NFS clients do not like 64 bit handles
+- When path is received it can be in form <path>/../<folder>. This introduced some problems. Path is now converted to canonical path,
+- Not every reparse point is considered a link. Reparse point which mounts another volume is not a link,
+
 ## 2.2.0 (August 6, 2016)
 
 **BUG FIXES & IMPROVEMENTS:**

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <direct.h>
+#include "common.hh"
 
 enum
 {
@@ -34,18 +35,12 @@ typedef void (CMountProg::*PPROC)(void);
 CMountProg::CMountProg() : CRPCProg()
 {
     m_nMountNum = 0;
-    m_pPathFile = NULL;
     memset(m_pClientAddr, 0, sizeof(m_pClientAddr));
 }
 
 CMountProg::~CMountProg()
 {
     int i;
-
-    if (m_pPathFile) {
-        free(m_pPathFile);
-        m_pPathFile = NULL;
-    }	
 
     for (i = 0; i < MOUNT_NUM_MAX; i++) {
         delete[] m_pClientAddr[i];
@@ -55,9 +50,9 @@ CMountProg::~CMountProg()
 
 bool CMountProg::SetPathFile(char *file)
 {
-	char *formattedFile = FormatPath(file, FORMAT_PATH);
+    std::string formattedFile = FormatPath(file, FORMAT_PATH);
 
-	if (!formattedFile) {
+	if (!formattedFile.length()) {
 		return false;
 	}
 
@@ -65,22 +60,21 @@ bool CMountProg::SetPathFile(char *file)
 
 	if (pathFile.good()) {
 		pathFile.close();
-		if (m_pPathFile) {
-			free(m_pPathFile);
-		}
-		m_pPathFile = formattedFile;
+		m_PathFile = formattedFile;
 		return true;
 	}
 
 	pathFile.close();
-	free(formattedFile);
 	return false;
 }
 
 void CMountProg::Export(char *path, char *pathAlias)
 {
-	char *formattedPath = FormatPath(path, FORMAT_PATH);
-	pathAlias = FormatPath(pathAlias, FORMAT_PATHALIAS);
+	std::string formattedPath = FormatPath(path, FORMAT_PATH);
+	std::string r;
+	r = FormatPath(pathAlias, FORMAT_PATHALIAS);
+
+	pathAlias = const_cast<char *>(r.c_str());
 
 	if (path != NULL && pathAlias != NULL) {
 		if (m_PathMap.count(pathAlias) == 0) {
@@ -89,16 +83,14 @@ void CMountProg::Export(char *path, char *pathAlias)
 		} else {
 			printf("Path %s with path alias  %s already known\n", path, pathAlias);
 		}
-
-		free(formattedPath);
 	}
 
 }
 
 bool CMountProg::Refresh()
 {
-	if (m_pPathFile != NULL) {
-		ReadPathsFromFile(m_pPathFile);
+	if (m_PathFile.size()) {
+		ReadPathsFromFile(m_PathFile.c_str());
 		return true;
 	}
 
@@ -161,20 +153,21 @@ void CMountProg::ProcedureNULL(void)
 void CMountProg::ProcedureMNT(void)
 {
 	Refresh();
-    char *path = new char[MAXPATHLEN + 1];
+    std::string path;
+	unsigned char* handle;
 	int i;
 
 	PrintLog("MNT");
 	PrintLog(" from %s\n", m_pParam->pRemoteAddr);
 
-	if (GetPath(&path)) {
+	if (GetPath(path)) {
 		m_pOutStream->Write(MNT_OK); //OK
-
+		handle = GetFileHandle(path.c_str());
 		if (m_pParam->nVersion == 1) {
-			m_pOutStream->Write(GetFileHandle(path), FHSIZE);  //fhandle
+			m_pOutStream->Write(&handle, g_FHSIZE);  //fhandle
 		} else {
-			m_pOutStream->Write(NFS3_FHSIZE);  //length
-			m_pOutStream->Write(GetFileHandle(path), NFS3_FHSIZE);  //fhandle
+			m_pOutStream->Write(g_NFS3_FHSIZE);  //length
+			m_pOutStream->Write(handle, g_NFS3_FHSIZE);  //fhandle
 			m_pOutStream->Write(0);  //flavor
 		}
 
@@ -194,11 +187,9 @@ void CMountProg::ProcedureMNT(void)
 
 void CMountProg::ProcedureUMNT(void)
 {
-	char *path = new char[MAXPATHLEN + 1];
     int i;
 
     PrintLog("UMNT");
-    GetPath(&path);
     PrintLog(" from %s", m_pParam->pRemoteAddr);
 
     for (i = 0; i < MOUNT_NUM_MAX; i++) {
@@ -219,12 +210,15 @@ void CMountProg::ProcedureNOIMP(void)
     m_nResult = PRC_NOTIMP;
 }
 
-bool CMountProg::GetPath(char **returnPath)
+bool CMountProg::GetPath(std::string &returnPath)
 {
 	unsigned long i, nSize;
 	static char path[MAXPATHLEN + 1];
 	static char finalPath[MAXPATHLEN + 1];
 	bool foundPath = false;
+
+	memset(path, 0, sizeof(path));
+	memset(finalPath, 0, sizeof(finalPath));
 
 	m_pInStream->Read(&nSize);
 
@@ -290,12 +284,12 @@ bool CMountProg::GetPath(char **returnPath)
 		m_pInStream->Read(&i, 4 - (nSize & 3));  //skip opaque bytes
 	}
 
-	*returnPath = finalPath;
+	returnPath = std::string(finalPath);
 	return foundPath;
 }
 
 
-bool CMountProg::ReadPathsFromFile(char* sFileName)
+bool CMountProg::ReadPathsFromFile(const char* sFileName)
 {
 	std::ifstream pathFile(sFileName);
 
@@ -337,8 +331,9 @@ bool CMountProg::ReadPathsFromFile(char* sFileName)
 	return true;
 }
 
-char *CMountProg::FormatPath(char *pPath, pathFormats format)
+std::string CMountProg::FormatPath(char *pPath, pathFormats format)
 {
+	std::string ret;
     size_t len = strlen(pPath);
 
 	//Remove head spaces
@@ -354,7 +349,7 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 
 	//Is comment?
 	if (*pPath == '#') {
-		return NULL;
+		return ret;
 	}
 
 	//Remove head "
@@ -369,7 +364,7 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 	}
 
 	if (len < 1) {
-		return NULL;
+		return ret;
 	}
 
 	char *result = (char *)malloc(len + 1);
@@ -405,7 +400,7 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 			printf("Path %s format is incorrect.\n", pPath);
 			printf("Please use a full path such as C:\\work or \\\\?\\C:\\work\n");
 			free(result);
-			return NULL;
+			return ret;
 		}
 
 		for (size_t i = 0; i < len; i++) {
@@ -428,9 +423,11 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 			printf("Path alias format is incorrect.\n");
 			printf("Please use a path like /exports\n");
 			free(result);
-			return NULL;
+			return ret;
 		}
 	}
 
-	return result;
+	ret = std::string(result);
+	free(result);
+	return ret;
 }

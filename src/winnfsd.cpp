@@ -5,6 +5,7 @@
 #include "MountProg.h"
 #include "ServerSocket.h"
 #include "DatagramSocket.h"
+#include "common.hh"
 #include <stdio.h>
 #include <direct.h>
 #include <iostream>
@@ -32,11 +33,13 @@ static CRPCServer g_RPCServer;
 static CPortmapProg g_PortmapProg;
 static CNFSProg g_NFSProg;
 static CMountProg g_MountProg;
+size_t g_FHSIZE = 32;
+size_t g_NFS3_FHSIZE = 64;
 
 static void printUsage(char *pExe)
 {
     printf("\n");
-    printf("Usage: %s [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [-addr <ip>] [export path] [alias path]\n\n", pExe);
+    printf("Usage: %s [-id <uid> <gid>] [-log on | off] [-nfs3fhsize_32 on | off] [-pathFile <file>] [-addr <ip>] [export path] [alias path]\n\n", pExe);
     printf("At least a file or a path is needed\n");
     printf("For example:\n");
     printf("On Windows> %s d:\\work\n", pExe);
@@ -65,7 +68,7 @@ static void printAbout(void)
     printf("Edited in 2011 by ZeWaren\n");
     printf("Edited in 2013 by Alexander Schneider (Jankowfsky AG)\n");
 	printf("Edited in 2014 2015 by Yann Schepens\n");
-	printf("Edited in 2016 by Peter Philipp (Cando Image GmbH), Marc Harding\n");
+	printf("Edited in 2016 by Peter Philipp (Cando Image GmbH), Marc Harding, Gregor Doltar\n");
     printLine();
 }
 
@@ -263,6 +266,11 @@ int main(int argc, char *argv[])
             g_nGID = atoi(argv[++i]);
         } else if (_stricmp(argv[i], "-log") == 0) {
             g_bLogOn = _stricmp(argv[++i], "off") != 0;
+        } else if (_stricmp(argv[i], "-nfs3fhsize32") == 0) {
+			if (!_stricmp(argv[++i], "on")) {
+				g_NFS3_FHSIZE = g_FHSIZE;
+				printf("NFS3_FHSIZE set to %d\n", g_NFS3_FHSIZE);
+			}
         } else if (_stricmp(argv[i], "-addr") == 0) {
 			g_sInAddr = argv[++i];
 		} else if (_stricmp(argv[i], "-pathFile") == 0) {

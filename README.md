@@ -37,10 +37,10 @@ Copyright (C) 2005 Ming-Yang Kao
 Edited in 2011 by ZeWaren
 Edited in 2013 by Alexander Schneider (Jankowfsky AG)
 Edited in 2014 2015 by Yann Schepens
-Edited in 2016 by Peter Philipp (Cando Image GmbH), Marc Harding
+Edited in 2016 by Peter Philipp (Cando Image GmbH), Marc Harding, Gregor Doltar
 =====================================================
 
-Usage: WinNFSd.exe [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [-addr <ip>] [export path] [alias path]
+Usage: WinNFSd.exe [-id <uid> <gid>] [-log on | off] [-pathFile <file>] [-addr <ip>] [-nfs3fhsize32 on] [export path] [alias path]
 
 At least a file or a path is needed
 For example:
@@ -57,4 +57,6 @@ On Linux> mount - t nfs 192.168.12.34: / exports
 
 Use "." to export the current directory (works also for -filePath):
 On Windows> WinNFSd.exe . /exports
+
+Some NFS clients cannot handle 64 bit file handles (default). You may try with -nfs3fhsize32 on. This will make them 32 bit wide.
 ```
