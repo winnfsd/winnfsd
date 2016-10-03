@@ -20,7 +20,7 @@ The export of multiple folders is also possible. Just put the shared foldes and 
 
 ```
 C:\path\to\a\mount > /alias
-C:\path\to\another\mount /another-alias
+C:\path\to\another\mount > /another-alias
 ```
 
 Then start winnfsd.exe like this:
@@ -59,4 +59,4 @@ Use "." to export the current directory (works also for -filePath):
 On Windows> WinNFSd.exe . /exports
 
 Some NFS clients cannot handle 64 bit file handles (default). You may try with -nfs3fhsize32 on. This will make them 32 bit wide.
-```
+

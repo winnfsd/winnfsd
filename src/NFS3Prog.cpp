@@ -1833,7 +1833,8 @@ nfsstat3 CNFS3Prog::CheckFile(const char *fullPath)
 
 nfsstat3 CNFS3Prog::CheckFile(char *directory, char *fullPath)
 {
-    if (directory == NULL || !FileExists(directory) || fullPath == NULL) {
+    // FileExists will not work for the root of a drive, e.g. \\?\D:\, therefore check if it is a drive root with GetDriveType
+    if (directory == NULL || (!FileExists(directory) && GetDriveType(directory) < 2) || fullPath == NULL) {
         return NFS3ERR_STALE;
     }
         

@@ -38,6 +38,8 @@ class CMountProg : public CRPCProg
     void ProcedureNULL(void);
     void ProcedureMNT(void);
     void ProcedureUMNT(void);
+    void ProcedureUMNTALL(void);
+    void ProcedureEXPORT(void);
     void ProcedureNOIMP(void);
 
     private:
