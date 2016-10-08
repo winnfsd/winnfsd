@@ -1002,6 +1002,7 @@ nfsstat3 CNFS3Prog::ProcedureREMOVE(void)
     char *path;
     wcc_data dir_wcc;
     nfsstat3 stat;
+    unsigned long returnCode;
 
     PrintLog("REMOVE");
 
@@ -1016,8 +1017,13 @@ nfsstat3 CNFS3Prog::ProcedureREMOVE(void)
     if (stat == NFS3_OK) {
         DWORD fileAttr = GetFileAttributes(path);
         if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-			if (RemoveFolder(path) == 0) {
-                stat = NFS3ERR_IO;
+            returnCode = RemoveFolder(path);
+            if (returnCode != 0) {
+                if (returnCode == ERROR_DIR_NOT_EMPTY) {
+                    stat = NFS3ERR_NOTEMPTY;
+                } else {
+                    stat = NFS3ERR_IO;
+                }
             }
         } else {
             if (!RemoveFile(path)) {
@@ -1039,6 +1045,7 @@ nfsstat3 CNFS3Prog::ProcedureRMDIR(void)
     char *path;
     wcc_data dir_wcc;
     nfsstat3 stat;
+    unsigned long returnCode;
 
     PrintLog("RMDIR");
 
@@ -1051,9 +1058,14 @@ nfsstat3 CNFS3Prog::ProcedureRMDIR(void)
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
     if (stat == NFS3_OK) {
-        if (!RemoveFolder(path)) {
-            stat = NFS3ERR_IO;
-        }         
+        returnCode = RemoveFolder(path);
+        if (returnCode != 0) {
+            if (returnCode == ERROR_DIR_NOT_EMPTY) {
+                stat = NFS3ERR_NOTEMPTY;
+            } else {
+                stat = NFS3ERR_IO;
+            }
+        }
     }
     
     dir_wcc.after.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.after.attributes);
@@ -1069,6 +1081,7 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     char pathFrom[MAXPATHLEN], *pathTo;
     wcc_data fromdir_wcc, todir_wcc;
     nfsstat3 stat;
+    unsigned long returnCode;
 
     PrintLog("RENAME");
 
@@ -1090,8 +1103,13 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     if (FileExists(pathTo)) {
 		DWORD fileAttr = GetFileAttributes(pathTo);
 		if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-			if (RemoveFolder(pathTo) == 0) {
-				stat = NFS3ERR_IO;
+			returnCode = RemoveFolder(pathTo);
+			if (returnCode != 0) {
+				if (returnCode == ERROR_DIR_NOT_EMPTY) {
+					stat = NFS3ERR_NOTEMPTY;
+				} else {
+					stat = NFS3ERR_IO;
+				}
 			}
 		}
 		else {

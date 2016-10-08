@@ -56,6 +56,6 @@ extern unsigned char *GetFileHandle(char *path);
 extern char *GetFilePath(unsigned char *handle);
 extern int RenameFile(char *pathFrom, char *pathTo);
 extern int RenameDirectory(char *pathFrom, char *pathTo);
-extern bool RemoveFolder(char *path);
+extern int RemoveFolder(char *path);
 extern bool RemoveFile(char *path);
 #endif

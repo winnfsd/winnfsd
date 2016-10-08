@@ -440,9 +440,10 @@ bool RemoveFile(char *path)
     return false;
 }
 
-bool RemoveFolder(char *path)
+int RemoveFolder(char *path)
 {
 	int nMode = 0;
+	unsigned long errorCode = 0;
 	nMode |= S_IREAD;
 	nMode |= S_IWRITE;
 	_chmod(path, nMode);
@@ -463,9 +464,10 @@ bool RemoveFolder(char *path)
         g_FileTable.RemoveItem(dotDirectoryPath);
         g_FileTable.RemoveItem(backDirectoryPath);
 		g_FileTable.RemoveItem(path);
-        return true;
+        return 0;
     }
-    return false;
+    errorCode = GetLastError();
+    return errorCode;
 }
 
 void RemovePathFromFileTable(char *path)
