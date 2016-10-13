@@ -1,3 +1,9 @@
+## 2.3.1 (October 13, 2016)
+
+**BUG FIXES & IMPROVEMENTS:**
+
+- Fix correct error code (NFS3ERR_NOTEMPTY) when deleting a directory which is not empty
+
 ## 2.3.0 (September 28, 2016)
 
 **BUG FIXES & IMPROVEMENTS:**
