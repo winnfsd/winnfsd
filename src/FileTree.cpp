@@ -1,5 +1,5 @@
 #include "FileTree.h"
-#include <string.h>
+#include <string>
 #include <io.h>
 #include <stdio.h>
 #include <windows.h>
