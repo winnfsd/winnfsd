@@ -28,6 +28,7 @@ int CNFSProg::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proces
 
         return m_pNFS3Prog->Process(pInStream, pOutStream, pParam);
     } else {
+        PrintLog("Client requested NFS version %u which isn't supported.\n", pParam->nVersion);
         return PRC_NOTIMP;
     }
 }
