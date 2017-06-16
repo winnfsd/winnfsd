@@ -56,6 +56,6 @@ extern unsigned char * GetFileHandle(const char *path);
 extern void GetFilePath(unsigned char *handle, std::string &path);
 extern int RenameFile(char *pathFrom, char *pathTo);
 extern int RenameDirectory(char *pathFrom, char *pathTo);
-extern bool RemoveFolder(char *path);
+extern int RemoveFolder(char *path);
 extern bool RemoveFile(char *path);
 #endif
