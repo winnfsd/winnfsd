@@ -111,22 +111,14 @@ void CPortmapProg::ProcedureGETPORT(void)
 
 void CPortmapProg::ProcedureDUMP(void)
 {
-    PORTMAP_HEADER header;
-
     PrintLog("DUMP");
 
-    header = { PROG_PORTMAP, 2, IPPROTO_TCP, PORTMAP_PORT };
-    Write(header);
-    header = { PROG_PORTMAP, 2, IPPROTO_UDP, PORTMAP_PORT };
-    Write(header);
-    header = { PROG_NFS, 3, IPPROTO_TCP, NFS_PORT };
-    Write(header);
-    header = { PROG_NFS, 3, IPPROTO_UDP, NFS_PORT };
-    Write(header);
-    header = { PROG_MOUNT, 3, IPPROTO_TCP, MOUNT_PORT };
-    Write(header);
-    header = { PROG_MOUNT, 3, IPPROTO_UDP, MOUNT_PORT };
-    Write(header);
+    Write(PROG_PORTMAP, 2, IPPROTO_TCP, PORTMAP_PORT);
+    Write(PROG_PORTMAP, 2, IPPROTO_UDP, PORTMAP_PORT);
+    Write(PROG_NFS, 3, IPPROTO_TCP, NFS_PORT);
+    Write(PROG_NFS, 3, IPPROTO_UDP, NFS_PORT);
+    Write(PROG_MOUNT, 3, IPPROTO_TCP, MOUNT_PORT);
+    Write(PROG_MOUNT, 3, IPPROTO_UDP, MOUNT_PORT);
 
     m_pOutStream->Write(0);
 }
@@ -137,11 +129,11 @@ void CPortmapProg::ProcedureCALLIT(void)
     m_nResult = PRC_NOTIMP;
 }
 
-void CPortmapProg::Write(PORTMAP_HEADER header)
+void CPortmapProg::Write(unsigned long prog, unsigned long vers, unsigned long proto, unsigned long port)
 {
     m_pOutStream->Write(1);
-    m_pOutStream->Write(header.prog);
-    m_pOutStream->Write(header.vers);
-    m_pOutStream->Write(header.proto);
-    m_pOutStream->Write(header.port);
+    m_pOutStream->Write(prog);
+    m_pOutStream->Write(vers);
+    m_pOutStream->Write(proto);
+    m_pOutStream->Write(port);
 }

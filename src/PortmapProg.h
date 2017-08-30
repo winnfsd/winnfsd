@@ -38,7 +38,7 @@ class CPortmapProg : public CRPCProg
     ProcessParam *m_pParam;
     int m_nResult;
 
-    void Write(PORTMAP_HEADER header);
+    void Write(unsigned long prog, unsigned long vers, unsigned long proto, unsigned long port);
 };
 
 #endif
