@@ -731,16 +731,22 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
 
     file_wcc.before.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.before.attributes);
 
-    if (stat == NFS3_OK) {       
+    if (stat == NFS3_OK) {
 
         if (stable == UNSTABLE) {
             nfs_fh3 handle;
             GetFileHandle(path, &handle);
             int handleId = *(unsigned int *)handle.contents;
+
             if (unstableStorageFile.count(handleId) == 0){
-                unstableStorageFile.insert(std::make_pair(handleId, _fsopen(path, "r+b", _SH_DENYWR)));
+                pFile = _fsopen(path, "r+b", _SH_DENYWR);
+                if (pFile != NULL) {
+                    unstableStorageFile.insert(std::make_pair(handleId, pFile));
+                }
+            } else {
+                pFile = unstableStorageFile[handleId];
             }
-            pFile = unstableStorageFile[handleId];
+
             if (pFile != NULL) {
                 _fseeki64(pFile, offset, SEEK_SET);
                 count = fwrite(data.contents, sizeof(char), data.length, pFile);
