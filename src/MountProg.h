@@ -19,13 +19,13 @@ class CMountProg : public CRPCProg
     public:
     CMountProg();
     virtual ~CMountProg();
-	bool SetPathFile(char *file);
-    void Export(char *path, char *pathAlias);
+	bool SetPathFile(const char *file);
+    void Export(const char *path, const char *pathAlias);
 	bool Refresh();
     char *GetClientAddr(int nIndex);
     int GetMountNumber(void);
     int Process(IInputStream *pInStream, IOutputStream *pOutStream, ProcessParam *pParam);
-	char *FormatPath(char *pPath, pathFormats format);
+	char *FormatPath(const char *pPath, pathFormats format);
 
     protected:
     int m_nMountNum;
@@ -48,7 +48,7 @@ class CMountProg : public CRPCProg
 
 	bool GetPath(char **returnPath);
     char *GetPath(int &pathNumber);
-	bool ReadPathsFromFile(char* sFileName);
+	bool ReadPathsFromFile(const char* sFileName);
 };
 
 #endif

@@ -81,7 +81,7 @@ std::string _basename_932(std::string path) {
 	return result;
 }
 
-FILE_ITEM CFileTree::AddItem(char *absolutePath, unsigned char* handle)
+FILE_ITEM CFileTree::AddItem(const char *absolutePath, unsigned char* handle)
 {
 	FILE_ITEM item;
 	item.handle = handle;
@@ -125,7 +125,7 @@ FILE_ITEM CFileTree::AddItem(char *absolutePath, unsigned char* handle)
 	return item;
 }
 
-void CFileTree::RemoveItem(char *absolutePath)
+void CFileTree::RemoveItem(const char *absolutePath)
 {
 	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePath);
 	if (node != NULL) {
@@ -138,7 +138,7 @@ void CFileTree::RemoveItem(char *absolutePath)
 	DisplayTree(topNode.node, 0);
 }
 
-void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
+void CFileTree::RenameItem(const char *absolutePathFrom, const char *absolutePathTo)
 {
 	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePathFrom);
 	tree_node_<FILE_ITEM>* parentNode = findParentNodeFromRootForPath(absolutePathTo);
@@ -162,7 +162,7 @@ void CFileTree::RenameItem(char *absolutePathFrom, char *absolutePathTo)
 	DisplayTree(topNode.node, 0);
 }
 
-tree_node_<FILE_ITEM>* CFileTree::FindFileItemForPath(char *absolutePath)
+tree_node_<FILE_ITEM>* CFileTree::FindFileItemForPath(const char *absolutePath)
 {
 	tree_node_<FILE_ITEM>* node = findNodeFromRootWithPath(absolutePath);
 	if (node == NULL) {
@@ -171,7 +171,7 @@ tree_node_<FILE_ITEM>* CFileTree::FindFileItemForPath(char *absolutePath)
 	return node;
 }
 
-tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
+tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(const char *path)
 {
 	// No topNode - bail out.
 	if (topNode.node == NULL){
@@ -190,7 +190,7 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 	if (sPath.find(nPath) != std::string::npos) {
 		// printf("Found %s is part of %s  \n", sPath.c_str(), topNode->path);
 		std::string splittedString = sPath.substr(strlen(topNode->path) + 1);
-		return findNodeWithPathFromNode(splittedString, topNode.node);
+		return findNodeWithPathFromNode(splittedString.c_str(), topNode.node);
 	}
 	else {
 		// If the current topNode isn't related to the requested path
@@ -214,7 +214,7 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 				// printf("Found root node %s \n", it.node->data.path);
 				topNode = it;
 				std::string splittedString = sPath.substr(itPath.length() + 1);
-				return findNodeWithPathFromNode(splittedString, it.node);
+				return findNodeWithPathFromNode(splittedString.c_str(), it.node);
 			}
 		}
 	}
@@ -222,7 +222,7 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeFromRootWithPath(char *path)
 	return NULL;
 }
 
-tree_node_<FILE_ITEM>* CFileTree::findNodeWithPathFromNode(std::string path, tree_node_<FILE_ITEM>* node)
+tree_node_<FILE_ITEM>* CFileTree::findNodeWithPathFromNode(const char *path, tree_node_<FILE_ITEM>* node)
 {
 	tree<FILE_ITEM>::sibling_iterator sib = filesTree.begin(node);
 	tree<FILE_ITEM>::sibling_iterator end = filesTree.end(node);
@@ -241,7 +241,7 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeWithPathFromNode(std::string path, tre
 				return sib.node;
 			}
 			else {
-				return findNodeWithPathFromNode(followingPath, sib.node);
+				return findNodeWithPathFromNode(followingPath.c_str(), sib.node);
 			}
 		}
 		++sib;
@@ -249,7 +249,7 @@ tree_node_<FILE_ITEM>* CFileTree::findNodeWithPathFromNode(std::string path, tre
 	return NULL;
 }
 
-tree_node_<FILE_ITEM>* CFileTree::findParentNodeFromRootForPath(char *path) {
+tree_node_<FILE_ITEM>* CFileTree::findParentNodeFromRootForPath(const char *path) {
 	std::string sPath(path);
 	std::string nPath(topNode->path);
 
@@ -265,11 +265,11 @@ tree_node_<FILE_ITEM>* CFileTree::findParentNodeFromRootForPath(char *path) {
 	if (followingPath.empty()) {
 		return topNode.node;
 	} else {
-		return findNodeWithPathFromNode(followingPath, topNode.node);
+		return findNodeWithPathFromNode(followingPath.c_str(), topNode.node);
 	}
 }
 
-char* CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
+std::string CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
 {
 	std::string path;
 	path.append(node->data.path);
@@ -281,10 +281,7 @@ char* CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
 		parentNode = parentNode->parent;
 	}
 
-	// TODO : Memory leak
-	char *cstr = new char[path.length() + 1];
-	strcpy_s(cstr, path.length() + 1, path.c_str());
-	return cstr;
+    return path;
 }
 
 void DisplayTree(tree_node_<FILE_ITEM>* node, int level)

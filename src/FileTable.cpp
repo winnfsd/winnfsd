@@ -48,7 +48,7 @@ CFileTable::~CFileTable()
     }
 }
 
-unsigned long CFileTable::GetIDByPath(char *path)
+unsigned long CFileTable::GetIDByPath(const char *path)
 {
     unsigned char *handle;
 
@@ -61,7 +61,7 @@ unsigned long CFileTable::GetIDByPath(char *path)
     return *(unsigned long *)handle;
 }
 
-unsigned char *CFileTable::GetHandleByPath(char *path)
+unsigned char *CFileTable::GetHandleByPath(const char *path)
 {
 	tree_node_<FILE_ITEM> *node;
 
@@ -83,7 +83,7 @@ unsigned char *CFileTable::GetHandleByPath(char *path)
 	return node->data.handle;
 }
 
-char *CFileTable::GetPathByHandle(unsigned char *handle)
+std::string CFileTable::GetPathByHandle(unsigned char *handle)
 {
 	unsigned int id;
 	tree_node_<FILE_ITEM>* node;
@@ -99,7 +99,7 @@ char *CFileTable::GetPathByHandle(unsigned char *handle)
     //return pItem == NULL ? NULL : pItem->path;
 }
 
-tree_node_<FILE_ITEM>* CFileTable::FindItemByPath(char *path)
+tree_node_<FILE_ITEM>* CFileTable::FindItemByPath(const char *path)
 {
 	tree_node_<FILE_ITEM>* node= NULL;/*
     CACHE_LIST *pCurr;
@@ -156,7 +156,7 @@ tree_node_<FILE_ITEM>* CFileTable::FindItemByPath(char *path)
 	return node;
 }
 
-tree_node_<FILE_ITEM>* CFileTable::AddItem(char *path)
+tree_node_<FILE_ITEM>* CFileTable::AddItem(const char *path)
 {
     FILE_ITEM item;
 	tree_node_<FILE_ITEM>* node;
@@ -256,7 +256,7 @@ void CFileTable::PutItemInCache(FILE_ITEM *pItem)
     }
 }
 
-bool CFileTable::RemoveItem(char *path) {
+bool CFileTable::RemoveItem(const char *path) {
    /* CACHE_LIST *pCurr;
     FILE_ITEM *pItem;
     unsigned int i, j, nPathLen;
@@ -317,7 +317,7 @@ bool CFileTable::RemoveItem(char *path) {
 		}
 		// Remove from table end
 
-		g_FileTree.RemoveItem(g_FileTree.GetNodeFullPath(foundDeletedItem));
+		g_FileTree.RemoveItem(g_FileTree.GetNodeFullPath(foundDeletedItem).c_str());
 		return true;
 	}
 	else {
@@ -326,7 +326,7 @@ bool CFileTable::RemoveItem(char *path) {
     return false;
 }
 
-void CFileTable::RenameFile(char *pathFrom, char* pathTo)
+void CFileTable::RenameFile(const char *pathFrom, const char* pathTo)
 {
 	/*FILE_ITEM *pItem;
 
@@ -343,7 +343,7 @@ void CFileTable::RenameFile(char *pathFrom, char* pathTo)
 	g_FileTree.RenameItem(pathFrom, pathTo);
 }
 
-bool FileExists(char *path)
+bool FileExists(const char *path)
 {
     int handle;
     struct _finddata_t fileinfo;
@@ -354,22 +354,22 @@ bool FileExists(char *path)
     return handle == -1 ? false : strcmp(fileinfo.name, strrchr(path, '\\') + 1) == 0;  //filename must match case
 }
 
-unsigned long GetFileID(char *path)
+unsigned long GetFileID(const char *path)
 {
     return g_FileTable.GetIDByPath(path);
 }
 
-unsigned char *GetFileHandle(char *path)
+unsigned char *GetFileHandle(const char *path)
 {
     return g_FileTable.GetHandleByPath(path);
 }
 
-char *GetFilePath(unsigned char *handle)
+std::string GetFilePath(unsigned char *handle)
 {
     return g_FileTable.GetPathByHandle(handle);
 }
 
-int RenameFile(char *pathFrom, char *pathTo)
+int RenameFile(const char *pathFrom, const char *pathTo)
 {
 	tree_node_<FILE_ITEM>* node;
     FILE_ITEM *pItem;
@@ -392,7 +392,7 @@ int RenameFile(char *pathFrom, char *pathTo)
     }
 }
 
-int RenameDirectory(char *pathFrom, char *pathTo)
+int RenameDirectory(const char *pathFrom, const char *pathTo)
 {
 	errno_t errorNumber = RenameFile(pathFrom, pathTo);
 
@@ -426,7 +426,7 @@ int RenameDirectory(char *pathFrom, char *pathTo)
 
 }
 
-bool RemoveFile(char *path)
+bool RemoveFile(const char *path)
 {
 	int nMode = 0;
 	nMode |= S_IREAD;
@@ -440,7 +440,7 @@ bool RemoveFile(char *path)
     return false;
 }
 
-int RemoveFolder(char *path)
+int RemoveFolder(const char *path)
 {
 	int nMode = 0;
 	unsigned long errorCode = 0;

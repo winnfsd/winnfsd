@@ -30,15 +30,15 @@ class CFileTable
     public:
     CFileTable();
     ~CFileTable();
-    unsigned long GetIDByPath(char *path);
-    unsigned char *GetHandleByPath(char *path);
-    char *GetPathByHandle(unsigned char *handle);
-	tree_node_<FILE_ITEM>* FindItemByPath(char *path);
-    bool RemoveItem(char *path);
-	void RenameFile(char *pathFrom, char *pathTo);
+    unsigned long GetIDByPath(const char *path);
+    unsigned char *GetHandleByPath(const char *path);
+    std::string GetPathByHandle(unsigned char *handle);
+	tree_node_<FILE_ITEM>* FindItemByPath(const char *path);
+    bool RemoveItem(const char *path);
+	void RenameFile(const char *pathFrom, const char *pathTo);
 
     protected:
-		tree_node_<FILE_ITEM>* AddItem(char *path);
+		tree_node_<FILE_ITEM>* AddItem(const char *path);
 
     private:
     FILE_TABLE *m_pFirstTable, *m_pLastTable;
@@ -50,12 +50,12 @@ class CFileTable
 
 };
 
-extern bool FileExists(char *path);
-extern unsigned long GetFileID(char *path);
-extern unsigned char *GetFileHandle(char *path);
-extern char *GetFilePath(unsigned char *handle);
-extern int RenameFile(char *pathFrom, char *pathTo);
-extern int RenameDirectory(char *pathFrom, char *pathTo);
-extern int RemoveFolder(char *path);
-extern bool RemoveFile(char *path);
+extern bool FileExists(const char *path);
+extern unsigned long GetFileID(const char *path);
+extern unsigned char *GetFileHandle(const char *path);
+extern std::string GetFilePath(unsigned char *handle);
+extern int RenameFile(const char *pathFrom, const char *pathTo);
+extern int RenameDirectory(const char *pathFrom, const char *pathTo);
+extern int RemoveFolder(const char *path);
+extern bool RemoveFile(const char *path);
 #endif
