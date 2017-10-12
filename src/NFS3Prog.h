@@ -288,9 +288,8 @@ class CNFS3Prog : public CRPCProg
     private:
     int m_nResult;
 
-    std::string GetPath(void);
-    void ReadDirectory(std::string &dirName, std::string &fileName);
-    char *GetFullPath(void);
+    bool GetPath(std::string &path);
+    bool ReadDirectory(std::string &dirName, std::string &fileName);
     char *GetFullPath(std::string &dirName, std::string &fileName);
     nfsstat3 CheckFile(const char *fullPath);
     nfsstat3 CheckFile(const char *directory, const char *fullPath);

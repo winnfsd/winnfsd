@@ -32,7 +32,7 @@ class CFileTable
     ~CFileTable();
     unsigned long GetIDByPath(const char *path);
     unsigned char *GetHandleByPath(const char *path);
-    std::string GetPathByHandle(unsigned char *handle);
+    bool GetPathByHandle(unsigned char *handle, std::string &path);
 	tree_node_<FILE_ITEM>* FindItemByPath(const char *path);
     bool RemoveItem(const char *path);
 	void RenameFile(const char *pathFrom, const char *pathTo);
@@ -53,7 +53,7 @@ class CFileTable
 extern bool FileExists(const char *path);
 extern unsigned long GetFileID(const char *path);
 extern unsigned char *GetFileHandle(const char *path);
-extern std::string GetFilePath(unsigned char *handle);
+extern bool GetFilePath(unsigned char *handle, std::string &filePath);
 extern int RenameFile(const char *pathFrom, const char *pathTo);
 extern int RenameDirectory(const char *pathFrom, const char *pathTo);
 extern int RemoveFolder(const char *path);

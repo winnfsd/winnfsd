@@ -269,9 +269,8 @@ tree_node_<FILE_ITEM>* CFileTree::findParentNodeFromRootForPath(const char *path
 	}
 }
 
-std::string CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
+void CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node, std::string &path)
 {
-	std::string path;
 	path.append(node->data.path);
 	tree_node_<FILE_ITEM>* parentNode = node->parent;
 	while (parentNode != NULL)
@@ -280,8 +279,6 @@ std::string CFileTree::GetNodeFullPath(tree_node_<FILE_ITEM>* node)
 		path.insert(0, parentNode->data.path);
 		parentNode = parentNode->parent;
 	}
-
-    return path;
 }
 
 void DisplayTree(tree_node_<FILE_ITEM>* node, int level)

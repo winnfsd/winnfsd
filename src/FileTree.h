@@ -13,7 +13,7 @@ class CFileTree
 
 		tree_node_<FILE_ITEM>* FindFileItemForPath(const char *absolutePath);
 
-        std::string GetNodeFullPath(tree_node_<FILE_ITEM>* node);
+        void GetNodeFullPath(tree_node_<FILE_ITEM>* node, std::string &fullPath);
 		
 	protected:
 		tree_node_<FILE_ITEM>* findNodeFromRootWithPath(const char *path);
