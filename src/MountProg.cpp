@@ -53,7 +53,7 @@ CMountProg::~CMountProg()
 
 }
 
-bool CMountProg::SetPathFile(char *file)
+bool CMountProg::SetPathFile(const char *file)
 {
 	char *formattedFile = FormatPath(file, FORMAT_PATH);
 
@@ -77,7 +77,7 @@ bool CMountProg::SetPathFile(char *file)
 	return false;
 }
 
-void CMountProg::Export(char *path, char *pathAlias)
+void CMountProg::Export(const char *path, const char *pathAlias)
 {
 	char *formattedPath = FormatPath(path, FORMAT_PATH);
 	pathAlias = FormatPath(pathAlias, FORMAT_PATHALIAS);
@@ -348,7 +348,7 @@ bool CMountProg::GetPath(char **returnPath)
 }
 
 
-bool CMountProg::ReadPathsFromFile(char* sFileName)
+bool CMountProg::ReadPathsFromFile(const char* sFileName)
 {
 	std::ifstream pathFile(sFileName);
 
@@ -396,7 +396,7 @@ bool CMountProg::ReadPathsFromFile(char* sFileName)
 	return true;
 }
 
-char *CMountProg::FormatPath(char *pPath, pathFormats format)
+char *CMountProg::FormatPath(const char *pPath, pathFormats format)
 {
     size_t len = strlen(pPath);
 
@@ -484,15 +484,15 @@ char *CMountProg::FormatPath(char *pPath, pathFormats format)
 		}
 	} else if (format == FORMAT_PATHALIAS) {
 		if (pPath[1] == ':' && ((pPath[0] >= 'A' && pPath[0] <= 'Z') || (pPath[0] >= 'a' && pPath[0] <= 'z'))) {
+            strncpy_s(result, len + 1, pPath, len);
 			//transform Windows format to mount path d:\work => /d/work
-			pPath[1] = pPath[0];
-			pPath[0] = '/';
-			for (size_t i = 2; i < strlen(pPath); i++) {
-				if (pPath[i] == '\\') {
-					pPath[i] = '/';
+            result[1] = result[0];
+            result[0] = '/';
+			for (size_t i = 2; i < strlen(result); i++) {
+				if (result[i] == '\\') {
+                    result[i] = '/';
 				}
 			}
-			strncpy_s(result, len + 1, pPath, len);
 		} else if (pPath[0] != '/') { //check path alias format
 			printf("Path alias format is incorrect.\n");
 			printf("Please use a path like /exports\n");

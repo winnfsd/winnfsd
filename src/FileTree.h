@@ -7,18 +7,18 @@ class CFileTree
 {
 	public:
 		bool static const debug = false;
-		FILE_ITEM AddItem(char *absolutePath, unsigned char *handle);
-		void RemoveItem(char *absolutePath);
-		void RenameItem(char *absolutePathFrom, char *absolutePathTo);
+		FILE_ITEM AddItem(const char *absolutePath, unsigned char *handle);
+		void RemoveItem(const char *absolutePath);
+		void RenameItem(const char *absolutePathFrom, const char *absolutePathTo);
 
-		tree_node_<FILE_ITEM>* FindFileItemForPath(char *absolutePath);
+		tree_node_<FILE_ITEM>* FindFileItemForPath(const char *absolutePath);
 
-		char * GetNodeFullPath(tree_node_<FILE_ITEM>* node);
+        void GetNodeFullPath(tree_node_<FILE_ITEM>* node, std::string &fullPath);
 		
 	protected:
-		tree_node_<FILE_ITEM>* findNodeFromRootWithPath(char *path);
-		tree_node_<FILE_ITEM>* findNodeWithPathFromNode(std::string path, tree_node_<FILE_ITEM>* node);
-		tree_node_<FILE_ITEM>* findParentNodeFromRootForPath(char *path);
+		tree_node_<FILE_ITEM>* findNodeFromRootWithPath(const char *path);
+		tree_node_<FILE_ITEM>* findNodeWithPathFromNode(const char *path, tree_node_<FILE_ITEM>* node);
+		tree_node_<FILE_ITEM>* findParentNodeFromRootForPath(const char *path);
 };
 extern void DisplayTree(tree_node_<FILE_ITEM>* node, int level);
 

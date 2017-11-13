@@ -288,15 +288,14 @@ class CNFS3Prog : public CRPCProg
     private:
     int m_nResult;
 
-    char *GetPath(void);
-    void ReadDirectory(std::string &dirName, std::string &fileName);
-    char *GetFullPath(void);
+    bool GetPath(std::string &path);
+    bool ReadDirectory(std::string &dirName, std::string &fileName);
     char *GetFullPath(std::string &dirName, std::string &fileName);
-    nfsstat3 CheckFile(char *fullPath);
-    nfsstat3 CheckFile(char *directory, char *fullPath);
-    bool GetFileHandle(char *path, nfs_fh3 *pObject);
-    bool GetFileAttributesForNFS(char *path, wcc_attr *pAttr);
-    bool GetFileAttributesForNFS(char *path, fattr3 *pAttr);
+    nfsstat3 CheckFile(const char *fullPath);
+    nfsstat3 CheckFile(const char *directory, const char *fullPath);
+    bool GetFileHandle(const char *path, nfs_fh3 *pObject);
+    bool GetFileAttributesForNFS(const char *path, wcc_attr *pAttr);
+    bool GetFileAttributesForNFS(const char *path, fattr3 *pAttr);
     UINT32 FileTimeToPOSIX(FILETIME ft);
     std::unordered_map<int, FILE*> unstableStorageFile;
 };
