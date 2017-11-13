@@ -1,3 +1,11 @@
+## 2.4.0 (November 13, 2017)
+
+**BUG FIXES & IMPROVEMENTS:**
+
+- Fixed memory leads (many thanks to Toilal!)
+- Fix file writing issue when first write cause access denied error (thanks to Toilal)
+- Minor stuff
+
 ## 2.3.1 (October 13, 2016)
 
 **BUG FIXES & IMPROVEMENTS:**
