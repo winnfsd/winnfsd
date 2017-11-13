@@ -229,7 +229,7 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
         &CNFS3Prog::ProcedureCOMMIT
     };
 
-    nfsstat3 stat;
+    nfsstat3 stat = NULL;
 
 	struct tm current;
 	time_t now;
@@ -253,15 +253,22 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
 
     try {
         stat = (this->*pf[pParam->nProc])();
+    } catch (const std::runtime_error& re) {
+        m_nResult = PRC_FAIL;
+        PrintLog("Runtime error: ");
+        PrintLog(re.what());
+    } catch (const std::exception& ex) {
+        m_nResult = PRC_FAIL;
+        PrintLog("Exception: ");
+        PrintLog(ex.what());
     } catch (...) {
         m_nResult = PRC_FAIL;
+        PrintLog("Unknown failure: Possible memory corruption");
     }
 
     PrintLog(" ");
 
-    if (m_nResult == PRC_FAIL) { //input data is truncated
-        PrintLog("fail");
-    } else {
+    if (stat != NULL) {
         switch (stat) {
             case NFS3_OK:
                 PrintLog("OK");
