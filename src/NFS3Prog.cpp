@@ -1515,12 +1515,16 @@ nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
 
     handleId = *(unsigned int*)file.contents;
 
-    if (unstableStorageFile[handleId] != NULL) {
-        fclose(unstableStorageFile[handleId]);
-        unstableStorageFile.erase(handleId);
-        stat = NFS3_OK;
+    if (unstableStorageFile.count(handleId) != 0) {
+        if (unstableStorageFile[handleId] != NULL) {
+            fclose(unstableStorageFile[handleId]);
+            unstableStorageFile.erase(handleId);
+            stat = NFS3_OK;
+        } else {
+            stat = NFS3ERR_IO;
+        }
     } else {
-        stat = NFS3ERR_IO;
+        stat = NFS3_OK;
     }
 
     file_wcc.after.attributes_follow = GetFileAttributesForNFS(path, &file_wcc.after.attributes);
