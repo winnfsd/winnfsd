@@ -13,14 +13,13 @@ install:
   - ps: |
       cd C:\downloads
       [Net.ServicePointManager]::SecurityProtocol = 'Ssl3, Tls, Tls11, Tls12'
-      Start-FileDownload "http://download.virtualbox.org/virtualbox/5.1.6/VirtualBox-5.1.6-110634-Win.exe"
-      Start-FileDownload "http://download.virtualbox.org/virtualbox/5.1.6/Oracle_VM_VirtualBox_Extension_Pack-5.1.6.vbox-extpack"
-      Start-FileDownload "https://releases.hashicorp.com/vagrant/1.8.5/vagrant_1.8.5.msi"
-      Start-Process -FilePath "VirtualBox-5.1.6-110634-Win.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\VBox" -Wait
-      Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_1.8.5.msi /qb TARGETDIR=C:\Vagrant" -Wait
+      Start-FileDownload "http://download.virtualbox.org/virtualbox/5.2.6/VirtualBox-5.2.6-120293-Win.exe"
+      Start-FileDownload "http://download.virtualbox.org/virtualbox/5.2.6/Oracle_VM_VirtualBox_Extension_Pack-5.2.6.vbox-extpack"
+      Start-FileDownload "https://releases.hashicorp.com/vagrant/2.0.1/vagrant_2.0.1_x86_64.msi"
+      Start-Process -FilePath "VirtualBox-5.2.6-120293-Win.exe" -ArgumentList "-silent -logging -msiparams INSTALLDIR=C:\VBox" -Wait
+      Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_2.0.1_x86_64.msi /qb TARGETDIR=C:\Vagrant" -Wait
       cd $env:APPVEYOR_BUILD_FOLDER
   - set PATH=C:\Vagrant\HashiCorp\Vagrant\bin;C:\VBox;%PATH%
-  - VBoxManage extpack install C:\downloads\Oracle_VM_VirtualBox_Extension_Pack-5.1.6.vbox-extpack
   - vagrant -v
   - VBoxManage -v
   - ssh -V
