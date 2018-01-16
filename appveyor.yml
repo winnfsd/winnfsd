@@ -20,7 +20,7 @@ install:
       Start-Process -FilePath "msiexec.exe" -ArgumentList "/a vagrant_2.0.1_i686.msi /qb TARGETDIR=C:\Vagrant" -Wait
       cd $env:APPVEYOR_BUILD_FOLDER
   - set PATH=C:\Vagrant\HashiCorp\Vagrant\bin;C:\VBox;%PATH%
-  - VBoxManage extpack install C:\downloads\Oracle_VM_VirtualBox_Extension_Pack-5.2.6.vbox-extpack
+  - echo y | "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" extpack install --replace "C:\downloads\Oracle_VM_VirtualBox_Extension_Pack-5.2.6.vbox-extpack"
   - vagrant -v
   - VBoxManage -v
   - ssh -V
