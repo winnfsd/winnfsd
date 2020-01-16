@@ -347,7 +347,7 @@ void CFileTable::RenameFile(const char *pathFrom, const char* pathTo)
 
 bool FileExists(const char *path)
 {
-    int handle;
+    intptr_t handle;
     struct _finddata_t fileinfo;
 
     handle = _findfirst(path, &fileinfo);
