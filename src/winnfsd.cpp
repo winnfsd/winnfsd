@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
     g_nUID = g_nGID = 0;
     g_bLogOn = true;
     g_sFileName = NULL;
-	g_sInAddr = "0.0.0.0";
+	g_sInAddr = (char*)"0.0.0.0";
 
     for (int i = 1; i < argc; i++) {//parse parameters
         if (_stricmp(argv[i], "-id") == 0) {

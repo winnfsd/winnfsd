@@ -1,41 +1,45 @@
 @echo off
-tasklist /nh /fi "imagename eq winnfsd.exe" 2>nul | grep -i -c "winnfsd.exe" >nfsservicetmp
+:: Note: You can add the /B flag to the exit commands to keep the command window open. 
+:: Example:  exit /B 1
+
+set /p RUNUID="1000"
+set /p RUNGID="1000"
+set /p EXPORTSFILE="c:/winnfsd/exports.txt"
+
+tasklist /nh /fi "imagename eq winnfsd.exe" 2>nul | find /I /C "winnfsd.exe" >nfsservicetmp
 set /p RUNNINGTASKS=<nfsservicetmp
 del nfsservicetmp
 
 if %1==status (
-    printf "[NFS] Status: "
+    echo "[NFS] Status: "
     if %RUNNINGTASKS% == 0 (
-        printf "halted\n"
+        echo "halted\n"
         exit 1
     ) else (
-        printf "running\n"
+        echo "running\n"
         exit 0
     )
 )
 
-if %1==start (
-    printf "[NFS] Start: "
-    if %RUNNINGTASKS% == 0 (
-        start winnfsd -log off -pathFile %2
-        printf "started\n"
-    ) else (
-        printf "already running\n"
-    )
-    
-    exit 0
-)
-
 if %1==halt (
-    printf "[NFS] Halt: "
+    echo "[NFS] Halt: "
     if %RUNNINGTASKS% == 0 (
-        printf "not running\n"
+        echo "not running\n"
     ) else (
         taskkill /f /im "winnfsd.exe" >nul
-        printf "halt\n"
+        echo "halt\n"
     )
     
     exit 0
 )
 
-exit 1
+echo "[NFS] Start: "
+if %RUNNINGTASKS% == 0 (
+    start winnfsd -log off -uid %RUNUID% %RUNGID% -pathFile %2
+    echo "started\n"
+) else (
+    echo "already running\n"
+)
+
+exit 0
+
