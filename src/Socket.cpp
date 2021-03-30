@@ -130,8 +130,9 @@ void CSocket::Run(void)
                     nBytes = recv(m_Socket, (char *)m_SocketStream.GetInput(), fragmentHeaderLengthBytes, MSG_PEEK);
                 }
                 nBytes = recv(m_Socket, (char *)m_SocketStream.GetInput(), fragmentHeaderLengthBytes, 0);
-            } else {
-                nBytes = 0;
+            } else {                                  
+                printf("read %d Byte(s) from socket %d, while expected 4. About to close", nBytes, m_Socket);
+                nBytes = 0;                
             }
         } else if (m_nType == SOCK_DGRAM) {
             nBytes = recvfrom(m_Socket, (char *)m_SocketStream.GetInput(), m_SocketStream.GetBufferSize(), 0, (struct sockaddr *)&m_RemoteAddr, &nSize);
@@ -148,6 +149,7 @@ void CSocket::Run(void)
             break;
         }
     }
-
+    
+    Close();
     m_bActive = false;
 }
