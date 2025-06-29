@@ -347,13 +347,14 @@ void CFileTable::RenameFile(const char *pathFrom, const char* pathTo)
 
 bool FileExists(const char *path)
 {
-    int handle;
+    intptr_t  handle;
     struct _finddata_t fileinfo;
 
     handle = _findfirst(path, &fileinfo);
     _findclose(handle);
-
-    return handle == -1 ? false : strcmp(fileinfo.name, strrchr(path, '\\') + 1) == 0;  //filename must match case
+    
+    //return handle == -1 ? false : strcmp(fileinfo.name, strrchr(path, '\\') + 1) == 0;  //filename must match case
+    return handle == -1 ? false : true; //filename may not match case
 }
 
 unsigned long GetFileID(const char *path)

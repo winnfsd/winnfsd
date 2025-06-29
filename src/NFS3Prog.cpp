@@ -231,13 +231,13 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
 
     nfsstat3 stat = NULL;
 
-	struct tm current;
-	time_t now;
+    struct tm current;
+    time_t now;
 
-	time(&now);
-	localtime_s(&current, &now);
+    time(&now);
+    localtime_s(&current, &now);
 
-	PrintLog("[%02d:%02d:%02d] NFS ", current.tm_hour, current.tm_min, current.tm_sec);
+    PrintLog("[%02d:%02d:%02d] NFS ", current.tm_hour, current.tm_min, current.tm_sec);
 
     if (pParam->nProc >= sizeof(pf) / sizeof(PPROC)) {
         ProcedureNOIMP();
@@ -384,7 +384,7 @@ nfsstat3 CNFS3Prog::ProcedureGETATTR(void)
     bool validHandle = GetPath(path);
     const char* cStr = validHandle ? path.c_str() : NULL;
     stat = CheckFile(cStr);
-	//printf("\nscanned file %s\n", path);
+    //printf("\nscanned file %s\n", path);
     if (stat == NFS3ERR_NOENT) {
         stat = NFS3ERR_STALE;
     } else if (stat == NFS3_OK) {
@@ -453,8 +453,20 @@ nfsstat3 CNFS3Prog::ProcedureSETATTR(void)
         if (new_attributes.gid.set_it){}
 
         // deliberately not implemented
-        if (new_attributes.mtime.set_it == SET_TO_CLIENT_TIME){}
-        if (new_attributes.atime.set_it == SET_TO_CLIENT_TIME){}
+        if (new_attributes.mtime.set_it == SET_TO_CLIENT_TIME || new_attributes.atime.set_it == SET_TO_CLIENT_TIME){
+            hFile = CreateFile(cStr, FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+            if (hFile != INVALID_HANDLE_VALUE) {
+                if (new_attributes.mtime.set_it == SET_TO_CLIENT_TIME) {
+                    fileTime = PosixToFileTime(new_attributes.mtime.mtime.seconds);
+                    SetFileTime(hFile, NULL, NULL, &fileTime);
+                }
+                if (new_attributes.atime.set_it == SET_TO_CLIENT_TIME) {
+                    fileTime = PosixToFileTime(new_attributes.atime.atime.seconds);
+                    SetFileTime(hFile, NULL, &fileTime, NULL);
+                }
+            }
+            CloseHandle(hFile);
+        }
 
         if (new_attributes.mtime.set_it == SET_TO_SERVER_TIME || new_attributes.atime.set_it == SET_TO_SERVER_TIME){
             hFile = CreateFile(cStr, FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
@@ -676,6 +688,7 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
     opaque data;
     nfsstat3 stat;
     FILE *pFile;
+    nfs_fh3 handle;
 
     PrintLog("READ");
     bool validHandle = GetPath(path);
@@ -686,13 +699,23 @@ nfsstat3 CNFS3Prog::ProcedureREAD(void)
 
     if (stat == NFS3_OK) {
         data.SetSize(count);
-        pFile = _fsopen(cStr, "rb", _SH_DENYWR);
+
+        GetFileHandle(cStr, &handle);
+        int handleId = *(unsigned int *)handle.contents;
+
+        if (unstableStorageFile.count(handleId) == 0) {
+            pFile = _fsopen(cStr, "rb", _SH_DENYWR);
+        } else {
+            pFile = unstableStorageFile[handleId];
+        }
 
         if (pFile != NULL) {
             _fseeki64(pFile, offset, SEEK_SET) ;
             count = fread(data.contents, sizeof(char), count, pFile);
             eof = fgetc(pFile) == EOF;
-            fclose(pFile);
+            if (unstableStorageFile.count(handleId) == 0) {
+                fclose(pFile);
+            }
         } else {
             char buffer[BUFFER_SIZE];
             errno_t errorNumber = errno;
@@ -742,7 +765,8 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
     Read(&data);
     stat = CheckFile(cStr);
 
-    file_wcc.before.attributes_follow = GetFileAttributesForNFS(cStr, &file_wcc.before.attributes);
+    //file_wcc.before.attributes_follow = GetFileAttributesForNFS(cStr, &file_wcc.before.attributes);
+    file_wcc.before.attributes_follow = false;
 
     if (stat == NFS3_OK) {
 
@@ -763,6 +787,12 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
             if (pFile != NULL) {
                 _fseeki64(pFile, offset, SEEK_SET);
                 count = fwrite(data.contents, sizeof(char), data.length, pFile);
+                fflush(pFile);
+                file_wcc.after.attributes_follow = GetFileAttributesForNFS(cStr, &file_wcc.after.attributes);
+                if ((offset + count) < file_wcc.after.attributes.size) { // fix rewrite same block data
+                    //file_wcc.after.attributes.size = offset + count;
+                    //file_wcc.after.attributes.used = file_wcc.after.attributes.size;
+                }
             } else {
                 char buffer[BUFFER_SIZE];
                 errno_t errorNumber = errno;
@@ -779,7 +809,7 @@ nfsstat3 CNFS3Prog::ProcedureWRITE(void)
             // this should not be zero but a timestamp (process start time) instead
             verf = 0;
             // we can reuse this, because no physical write has happend
-            file_wcc.after.attributes_follow = file_wcc.before.attributes_follow;
+            //file_wcc.after.attributes_follow = file_wcc.before.attributes_follow;
         } else {
 
             pFile = _fsopen(cStr, "r+b", _SH_DENYWR);
@@ -974,7 +1004,7 @@ nfsstat3 CNFS3Prog::ProcedureSYMLINK(void)
     targetFileAttr = GetFileAttributes(fullTargetPathNormalized);
 
     dwFlags = 0x0;
-	if (targetFileAttr & FILE_ATTRIBUTE_DIRECTORY) {
+    if (targetFileAttr & FILE_ATTRIBUTE_DIRECTORY) {
         dwFlags = SYMBOLIC_LINK_FLAG_DIRECTORY;
     }
 
@@ -1120,22 +1150,21 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     todir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirToName.c_str(), &todir_wcc.before.attributes);
     
     if (FileExists(pathTo)) {
-		DWORD fileAttr = GetFileAttributes(pathTo);
-		if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-			returnCode = RemoveFolder(pathTo);
-			if (returnCode != 0) {
-				if (returnCode == ERROR_DIR_NOT_EMPTY) {
-					stat = NFS3ERR_NOTEMPTY;
-				} else {
-					stat = NFS3ERR_IO;
-				}
-			}
-		}
-		else {
-			if (!RemoveFile(pathTo)) {
-				stat = NFS3ERR_IO;
-			}
-		}
+        DWORD fileAttrFrom = GetFileAttributes(pathFrom);
+        DWORD fileAttrTo = GetFileAttributes(pathTo);
+        if (fileAttrFrom & FILE_ATTRIBUTE_DIRECTORY) {
+            if (fileAttrTo & FILE_ATTRIBUTE_DIRECTORY) {
+                stat = NFS3ERR_EXIST;
+            } else {
+                stat = NFS3ERR_NOTDIR;
+            }
+        } else {
+            if (fileAttrTo & FILE_ATTRIBUTE_DIRECTORY) {
+                stat = NFS3ERR_ISDIR;
+            } else {
+                stat = NFS3ERR_EXIST;
+            }
+        }
     } 
     
     if (stat == NFS3_OK) {
@@ -1216,7 +1245,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
     bool bFollows;
     nfsstat3 stat;
     char filePath[MAXPATHLEN];
-    int handle, nFound;
+    intptr_t handle, nFound;
     struct _finddata_t fileinfo;
     unsigned int i, j;
 
@@ -1299,7 +1328,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
     bool eof;
     nfsstat3 stat;
     char filePath[MAXPATHLEN];
-    int handle, nFound;
+    intptr_t handle, nFound;
     struct _finddata_t fileinfo;
     unsigned int i, j;
     bool bFollows;
@@ -1525,6 +1554,7 @@ nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
     nfsstat3 stat;
     nfs_fh3 file;
     writeverf3 verf;
+    DWORD fileAttr;
 
     PrintLog("COMMIT");
     Read(&file);
@@ -1551,9 +1581,7 @@ nfsstat3 CNFS3Prog::ProcedureCOMMIT(void)
             fclose(unstableStorageFile[handleId]);
             unstableStorageFile.erase(handleId);
             stat = NFS3_OK;
-        } else {
-            stat = NFS3ERR_IO;
-        }
+        } 
     } else {
         stat = NFS3_OK;
     }
@@ -1695,8 +1723,8 @@ void CNFS3Prog::Read(createhow3 *pHow)
 
 void CNFS3Prog::Read(symlinkdata3 *pSymlink)
 {
-	Read(&pSymlink->symlink_attributes);
-	Read(&pSymlink->symlink_data);
+    Read(&pSymlink->symlink_attributes);
+    Read(&pSymlink->symlink_data);
 }
 
 void CNFS3Prog::Write(bool *pBool)
@@ -1836,8 +1864,11 @@ char *CNFS3Prog::GetFullPath(std::string &dirName, std::string &fileName)
         return NULL;
     }
 
-    sprintf_s(fullPath, "%s\\%s", dirName.c_str(), fileName.c_str()); //concate path and filename
-    PrintLog(" %s ", fullPath);
+    if (0 == strncmp(fileName.c_str(), ".", 1)) {
+        sprintf_s(fullPath, "%s", dirName.c_str()); //concate path and filename
+    } else {
+        sprintf_s(fullPath, "%s\\%s", dirName.c_str(), fileName.c_str()); //concate path and filename
+    }
 
     return fullPath;
 }
@@ -1848,8 +1879,8 @@ nfsstat3 CNFS3Prog::CheckFile(const char *fullPath)
         return NFS3ERR_STALE;
     }
 
-	//if (!FileExists(fullPath)) {
-	if (_access(fullPath, 0) != 0) {
+    //if (!FileExists(fullPath)) {
+    if (_access(fullPath, 0) != 0) {
         return NFS3ERR_NOENT;
     }
 
@@ -1872,15 +1903,15 @@ nfsstat3 CNFS3Prog::CheckFile(const char *directory, const char *fullPath)
 
 bool CNFS3Prog::GetFileHandle(const char *path, nfs_fh3 *pObject)
 {
-	if (!::GetFileHandle(path)) {
-		PrintLog("no filehandle(path %s)", path);
-		return false;
-	}
+    if (!::GetFileHandle(path)) {
+        PrintLog("no filehandle(path %s)", path);
+        return false;
+    }
     auto err = memcpy_s(pObject->contents, NFS3_FHSIZE, ::GetFileHandle(path), pObject->length);
-	if (err != 0) {
-		PrintLog(" err %d ", err);
-		return false;
-	}
+    if (err != 0) {
+        PrintLog(" err %d ", err);
+        return false;
+    }
 
     return true;
 }
@@ -1900,8 +1931,8 @@ bool CNFS3Prog::GetFileAttributesForNFS(const char *path, wcc_attr *pAttr)
     pAttr->size = data.st_size;
     pAttr->mtime.seconds = (unsigned int)data.st_mtime;
     pAttr->mtime.nseconds = 0;
-	// TODO: This needs to be tested (not called on my setup)
-	// This seems to be the changed time, not creation time.
+    // TODO: This needs to be tested (not called on my setup)
+    // This seems to be the changed time, not creation time.
     //pAttr->ctime.seconds = data.st_ctime;
     pAttr->ctime.seconds = (unsigned int)data.st_mtime;
     pAttr->ctime.nseconds = 0;
@@ -1942,20 +1973,20 @@ bool CNFS3Prog::GetFileAttributesForNFS(const char *path, fattr3 *pAttr)
 
     if (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT) {
         pAttr->type = NF3LNK;
-		dwFlagsAndAttributes = FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS;
+        dwFlagsAndAttributes = FILE_ATTRIBUTE_REPARSE_POINT | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS;
     }
 
-	hFile = CreateFile(path, FILE_READ_EA, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFlagsAndAttributes, NULL);
+    hFile = CreateFile(path, FILE_READ_EA, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFlagsAndAttributes, NULL);
 
     if (hFile == INVALID_HANDLE_VALUE) {
         return false;
     }
 
     GetFileInformationByHandle(hFile, &lpFileInformation);
-	CloseHandle(hFile);
+    CloseHandle(hFile);
     pAttr->mode = 0;
 
-	// Set execution right for all
+    // Set execution right for all
     pAttr->mode |= 0x49;
 
     // Set read right for all
@@ -1982,8 +2013,8 @@ bool CNFS3Prog::GetFileAttributesForNFS(const char *path, fattr3 *pAttr)
     pAttr->atime.nseconds = 0;
     pAttr->mtime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastWriteTime);
     pAttr->mtime.nseconds = 0;
-	// This seems to be the changed time, not creation time
-	pAttr->ctime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastWriteTime);
+    // This seems to be the changed time, not creation time
+    pAttr->ctime.seconds = FileTimeToPOSIX(lpFileInformation.ftLastWriteTime);
     pAttr->ctime.nseconds = 0;
 
     return true;
@@ -2004,4 +2035,23 @@ UINT32 CNFS3Prog::FileTimeToPOSIX(FILETIME ft)
 
     // converts back from 100-nanoseconds to seconds
     return (unsigned int)(date.QuadPart / 10000000);
+}
+
+FILETIME CNFS3Prog::PosixToFileTime(UINT32 seconds)
+{
+    FILETIME ft;
+    // takes the last modified date
+    LARGE_INTEGER date, adjust;
+
+    // 100-nanoseconds = milliseconds * 10000
+    adjust.QuadPart = 11644473600000 * 10000;
+
+    // removes the diff between 1970 and 1601
+    date.QuadPart = (LONGLONG)seconds * 10000000;
+    date.QuadPart += adjust.QuadPart;
+
+    ft.dwHighDateTime = date.HighPart;
+    ft.dwLowDateTime = date.LowPart;
+    // converts back from 100-nanoseconds to seconds
+    return ft;
 }

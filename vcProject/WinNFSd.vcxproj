@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -21,31 +21,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7C0A4687-A9A1-4E06-A00D-EB85C2054EB0}</ProjectGuid>
     <RootNamespace>WinNFSd</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -68,15 +69,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);</LibraryPath>
+    <OutDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)output\$(TargetName)\$(PlatformTarget)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -88,6 +102,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -121,6 +136,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -130,47 +146,46 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="conv.cpp" />
-    <ClCompile Include="DatagramSocket.cpp" />
-    <ClCompile Include="FileTable.cpp" />
-    <ClCompile Include="FileTree.cpp" />
-    <ClCompile Include="MountProg.cpp" />
-    <ClCompile Include="NFS3Prog.cpp" />
-    <ClCompile Include="NFSProg.cpp" />
-    <ClCompile Include="PortmapProg.cpp" />
-    <ClCompile Include="RPCProg.cpp" />
-    <ClCompile Include="RPCServer.cpp" />
-    <ClCompile Include="ServerSocket.cpp" />
-    <ClCompile Include="Socket.cpp" />
-    <ClCompile Include="SocketStream.cpp" />
-    <ClCompile Include="winnfsd.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="DatagramSocket.h" />
-    <ClInclude Include="FileTable.h" />
-    <ClInclude Include="FileTree.h" />
-    <ClInclude Include="InputStream.h" />
-    <ClInclude Include="MountProg.h" />
-    <ClInclude Include="NFS2Prog.h" />
-    <ClInclude Include="NFS3Prog.h" />
-    <ClInclude Include="NFSProg.h" />
-    <ClInclude Include="OutputStream.h" />
-    <ClInclude Include="PortmapProg.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="RPCProg.h" />
-    <ClInclude Include="RPCServer.h" />
-    <ClInclude Include="ServerSocket.h" />
-    <ClInclude Include="Socket.h" />
-    <ClInclude Include="SocketListener.h" />
-    <ClInclude Include="SocketStream.h" />
-    <ClInclude Include="tree.hh" />
+    <ClInclude Include="..\src\conv.h" />
+    <ClInclude Include="..\src\DatagramSocket.h" />
+    <ClInclude Include="..\src\FileTable.h" />
+    <ClInclude Include="..\src\FileTree.h" />
+    <ClInclude Include="..\src\InputStream.h" />
+    <ClInclude Include="..\src\MountProg.h" />
+    <ClInclude Include="..\src\NFS3Prog.h" />
+    <ClInclude Include="..\src\NFSProg.h" />
+    <ClInclude Include="..\src\OutputStream.h" />
+    <ClInclude Include="..\src\PortmapProg.h" />
+    <ClInclude Include="..\src\resource.h" />
+    <ClInclude Include="..\src\RPCProg.h" />
+    <ClInclude Include="..\src\RPCServer.h" />
+    <ClInclude Include="..\src\ServerSocket.h" />
+    <ClInclude Include="..\src\Socket.h" />
+    <ClInclude Include="..\src\SocketListener.h" />
+    <ClInclude Include="..\src\SocketStream.h" />
+    <ClInclude Include="..\src\tree.hh" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
-    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WinNFSd.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\conv.cpp" />
+    <ClCompile Include="..\src\DatagramSocket.cpp" />
+    <ClCompile Include="..\src\FileTable.cpp" />
+    <ClCompile Include="..\src\FileTree.cpp" />
+    <ClCompile Include="..\src\MountProg.cpp" />
+    <ClCompile Include="..\src\NFS3Prog.cpp" />
+    <ClCompile Include="..\src\NFSProg.cpp" />
+    <ClCompile Include="..\src\PortmapProg.cpp" />
+    <ClCompile Include="..\src\RPCProg.cpp" />
+    <ClCompile Include="..\src\RPCServer.cpp" />
+    <ClCompile Include="..\src\ServerSocket.cpp" />
+    <ClCompile Include="..\src\Socket.cpp" />
+    <ClCompile Include="..\src\SocketStream.cpp" />
+    <ClCompile Include="..\src\winnfsd.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
