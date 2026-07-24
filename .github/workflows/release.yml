@@ -1,0 +1,45 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHORT_HASH="$(git rev-parse --short HEAD)"
+          RC_VERSION="$(echo "$VERSION" | sed 's/\./,/g').0"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "RC_VERSION=$RC_VERSION" >> $GITHUB_ENV
+          echo "SHORT_HASH=$SHORT_HASH" >> $GITHUB_ENV
+
+      - name: Patch version in resource file
+        run: |
+          sed -i "s/FILEVERSION 1,0,0,0/FILEVERSION $RC_VERSION/" src/WinNFSd.rc
+          sed -i "s/PRODUCTVERSION 1,0,0,0/PRODUCTVERSION $RC_VERSION/" src/WinNFSd.rc
+          sed -i "s/VALUE \"FileVersion\", \"1.0.0.0\"/VALUE \"FileVersion\", \"$VERSION.0\"/" src/WinNFSd.rc
+          sed -i "s/VALUE \"ProductVersion\", \"1.0.0.0-000000\"/VALUE \"ProductVersion\", \"$VERSION-$SHORT_HASH\"/" src/WinNFSd.rc
+
+      - name: Patch version in about text
+        run: |
+          sed -i "s/{{VERSION}}/$VERSION/g" src/winnfsd.cpp
+          sed -i "s/{{HASH}}/$SHORT_HASH/g" src/winnfsd.cpp
+
+      - name: Install MinGW cross-compiler
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Build
+        run: make
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/winnfsd.exe
+          generate_release_notes: true
