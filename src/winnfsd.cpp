@@ -28,7 +28,9 @@ enum
 static unsigned int g_nUID, g_nGID;
 static bool g_bLogOn;
 static char *g_sFileName;
-static CRPCServer g_RPCServer;
+static CRPCServer g_RPCServerPortmap;
+static CRPCServer g_RPCServerNFS;
+static CRPCServer g_RPCServerMount;
 static CPortmapProg g_PortmapProg;
 static CNFSProg g_NFSProg;
 static CMountProg g_MountProg;
@@ -150,9 +152,13 @@ static void inputCommand(void)
 		} else if (_stricmp(command, "help") == 0) {
 			printHelp();
 		} else if (_stricmp(command, "log on") == 0) {
-			g_RPCServer.SetLogOn(true);
+			g_RPCServerPortmap.SetLogOn(true);
+			g_RPCServerNFS.SetLogOn(true);
+			g_RPCServerMount.SetLogOn(true);
 		} else if (_stricmp(command, "log off") == 0) {
-			g_RPCServer.SetLogOn(false);
+			g_RPCServerPortmap.SetLogOn(false);
+			g_RPCServerNFS.SetLogOn(false);
+			g_RPCServerMount.SetLogOn(false);
 		} else if (_stricmp(command, "list") == 0) {
 			printList();
 		} else if (_stricmp(command, "quit") == 0) {
@@ -169,7 +175,7 @@ static void inputCommand(void)
 		} else if (_stricmp(command, "refresh") == 0) {
 			g_MountProg.Refresh();
 		} else if (_stricmp(command, "reset") == 0) {
-			g_RPCServer.Set(PROG_NFS, NULL);
+			g_RPCServerNFS.Set(PROG_NFS, NULL);
 		} else if (strcmp(command, "") != 0) {
 			printf("Unknown command: '%s'\n", command);
 			printf("Type 'help' to see help\n");
@@ -191,15 +197,19 @@ static void start(std::vector<std::vector<std::string>> paths)
 
 	mountPaths(paths);
 
-	g_RPCServer.Set(PROG_PORTMAP, &g_PortmapProg);  //program for portmap
-	g_RPCServer.Set(PROG_NFS, &g_NFSProg);  //program for nfs
-	g_RPCServer.Set(PROG_MOUNT, &g_MountProg);  //program for mount
-	g_RPCServer.SetLogOn(g_bLogOn);
+	g_RPCServerPortmap.Set(PROG_PORTMAP, &g_PortmapProg);  //program for portmap
+	g_RPCServerNFS.Set(PROG_NFS, &g_NFSProg);  //program for nfs
+	g_RPCServerMount.Set(PROG_MOUNT, &g_MountProg);  //program for mount
+	g_RPCServerPortmap.SetLogOn(g_bLogOn);
+	g_RPCServerNFS.SetLogOn(g_bLogOn);
+	g_RPCServerMount.SetLogOn(g_bLogOn);
 
-	for (i = 0; i < SOCKET_NUM; i++) {
-		DatagramSockets[i].SetListener(&g_RPCServer);
-		ServerSockets[i].SetListener(&g_RPCServer);
-	}
+	DatagramSockets[0].SetListener(&g_RPCServerPortmap);
+	ServerSockets[0].SetListener(&g_RPCServerPortmap);
+	DatagramSockets[1].SetListener(&g_RPCServerNFS);
+	ServerSockets[1].SetListener(&g_RPCServerNFS);
+	DatagramSockets[2].SetListener(&g_RPCServerMount);
+	ServerSockets[2].SetListener(&g_RPCServerMount);
 
 	bSuccess = false;
 

@@ -9,7 +9,7 @@ CXX=$(ARCH)-w64-mingw32-g++
 
 CPPFLAGS:=-g -O2 -std=c++11 -D_WIN32_WINNT=0x600
 LDFLAGS:=-g -static-libgcc -static-libstdc++ -mconsole
-LIBS:=-lws2_32
+LIBS:=-lws2_32 -lshlwapi
 
 $(PROGRAM): $(OBJS)
 	$(LINK.o) $^ $(LIBS) -o $@

@@ -227,13 +227,13 @@ void CMountProg::ProcedureEXPORT(void)
 		int fillBytes = (length % 4);
 		if (fillBytes > 0) {
 			fillBytes = 4 - fillBytes;
-			m_pOutStream->Write(".", fillBytes);
+			m_pOutStream->Write(const_cast<char*>("."), fillBytes);
 		}
 		// groups
 		m_pOutStream->Write(1);
 		m_pOutStream->Write(1);
-		m_pOutStream->Write("*", 1);
-		m_pOutStream->Write("...", 3);
+		m_pOutStream->Write(const_cast<char*>("*"), 1);
+		m_pOutStream->Write(const_cast<char*>("..."), 3);
 		m_pOutStream->Write(0);
 	}
 
