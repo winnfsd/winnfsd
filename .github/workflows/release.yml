@@ -29,8 +29,7 @@ jobs:
 
       - name: Patch version in about text
         run: |
-          sed -i "s/{{VERSION}}/$VERSION/g" src/winnfsd.cpp
-          sed -i "s/{{HASH}}/$SHORT_HASH/g" src/winnfsd.cpp
+          sed -i "s/WinNFSd 2\.4\.0/WinNFSd $VERSION [$SHORT_HASH]/" src/winnfsd.cpp
 
       - name: Install MinGW cross-compiler
         run: sudo apt-get update && sudo apt-get install -y mingw-w64

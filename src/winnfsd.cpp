@@ -61,7 +61,7 @@ static void printLine(void)
 static void printAbout(void)
 {
     printLine();
-    printf("WinNFSd {{VERSION}} [{{HASH}}]\n");
+    printf("WinNFSd 2.4.0\n");
     printf("Network File System server for Windows\n");
     printf("Copyright (C) 2005 Ming-Yang Kao\n");
     printf("Edited in 2011 by ZeWaren\n");
