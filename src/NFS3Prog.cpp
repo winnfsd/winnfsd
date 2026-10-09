@@ -261,6 +261,9 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
         m_nResult = PRC_FAIL;
         PrintLog("Exception: ");
         PrintLog(ex.what());
+    } catch (int line) {
+        m_nResult = PRC_FAIL;
+        PrintLog("Malformed request: decode failed at NFS3Prog.cpp:%d", line);
     } catch (...) {
         m_nResult = PRC_FAIL;
         PrintLog("Unknown failure: Possible memory corruption");
@@ -268,7 +271,7 @@ int CNFS3Prog::Process(IInputStream *pInStream, IOutputStream *pOutStream, Proce
 
     PrintLog(" ");
 
-    if (stat != NULL) {
+    if (m_nResult == PRC_OK) {
         switch (stat) {
             case NFS3_OK:
                 PrintLog("OK");
@@ -501,10 +504,32 @@ nfsstat3 CNFS3Prog::ProcedureLOOKUP(void)
 
     std::string dirName;
     std::string fileName;
-    ReadDirectory(dirName, fileName);
+    std::string dotPath;
+    bool validDir = ReadDirectory(dirName, fileName);
 
-    path = GetFullPath(dirName, fileName);
-    stat = CheckFile((char*)dirName.c_str(), path);
+    if (validDir && (fileName == "." || fileName == "..")) {
+        // Windows resolves "dir\." to "dir" itself, which FileExists' name check rejects,
+        // so resolve "." and ".." here. ".." at an export root stays at the root.
+        if (fileName == ".") {
+            dotPath = dirName;
+        } else {
+            GetParentPath(dirName.c_str(), dotPath);
+        }
+
+        path = (char*)dotPath.c_str();
+        PrintLog(" %s ", path);
+        stat = CheckFile(path);
+    } else {
+        path = GetFullPath(dirName, fileName);
+        stat = CheckFile((char*)dirName.c_str(), path);
+    }
+
+    if (stat == NFS3ERR_NOENT) {
+        struct _finddata_t fileinfo;
+        intptr_t handle = _findfirst(path, &fileinfo);
+        PrintLog(" (windows matched \"%s\")", handle == -1 ? "nothing" : fileinfo.name);
+        _findclose(handle);
+    }
 
     if (stat == NFS3_OK) {
         GetFileHandle(path, &object);
@@ -829,6 +854,7 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
     wcc_data dir_wcc;
     nfsstat3 stat;
     FILE *pFile;
+    DWORD existingAttr;
 
     PrintLog("CREATE");
     std::string dirName;
@@ -839,11 +865,49 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
 
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
-    pFile = _fsopen(path, "wb", _SH_DENYWR);
-       
-    if (pFile != NULL) {
-        fclose(pFile);
+    // Follow RFC 1813 3.3.8 like Linux nfsd: an existing file is never truncated unless
+    // UNCHECKED asks for a size, GUARDED fails with EXIST, and EXCLUSIVE only succeeds
+    // again for a retransmit carrying the same verifier.
+    existingAttr = GetFileAttributes(path);
+
+    if (existingAttr != INVALID_FILE_ATTRIBUTES) {
+        if (how.mode == GUARDED) {
+            stat = NFS3ERR_EXIST;
+        } else if (how.mode == EXCLUSIVE) {
+            stat = exclusiveCreateVerf.count(path) != 0 && exclusiveCreateVerf[path] == how.verf ? NFS3_OK : NFS3ERR_EXIST;
+        } else {
+            stat = NFS3_OK;
+
+            if (how.obj_attributes.size.set_it && (existingAttr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                pFile = _fsopen(path, "r+b", _SH_DENYWR);
+
+                if (pFile == NULL || _chsize_s(_fileno(pFile), how.obj_attributes.size.size) != 0) {
+                    stat = NFS3ERR_IO;
+                }
+
+                if (pFile != NULL) {
+                    fclose(pFile);
+                }
+            }
+        }
+    } else if ((pFile = _fsopen(path, "wb", _SH_DENYWR)) != NULL) {
         stat = NFS3_OK;
+
+        if (how.mode != EXCLUSIVE && how.obj_attributes.size.set_it && _chsize_s(_fileno(pFile), how.obj_attributes.size.size) != 0) {
+            stat = NFS3ERR_IO;
+        }
+
+        fclose(pFile);
+
+        if (how.mode == EXCLUSIVE) {
+            // ponytail: verifiers live in memory (Linux keeps them in atime/mtime), so a retransmit
+            // after a server restart gets EXIST; the cap keeps the map bounded
+            if (exclusiveCreateVerf.size() >= 1024) {
+                exclusiveCreateVerf.clear();
+            }
+
+            exclusiveCreateVerf[path] = how.verf;
+        }
     } else {
         char buffer[BUFFER_SIZE];
         errno_t errorNumber = errno;
@@ -1119,26 +1183,35 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     fromdir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirFromName.c_str(), &fromdir_wcc.before.attributes);
     todir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirToName.c_str(), &todir_wcc.before.attributes);
     
-    if (FileExists(pathTo)) {
-		DWORD fileAttr = GetFileAttributes(pathTo);
-		if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-			returnCode = RemoveFolder(pathTo);
-			if (returnCode != 0) {
-				if (returnCode == ERROR_DIR_NOT_EMPTY) {
-					stat = NFS3ERR_NOTEMPTY;
-				} else {
-					stat = NFS3ERR_IO;
-				}
-			}
-		}
-		else {
-			if (!RemoveFile(pathTo)) {
-				stat = NFS3ERR_IO;
-			}
-		}
-    } 
-    
-    if (stat == NFS3_OK) {
+    // Only touch the target once the source is known to exist, so a failed or
+    // retransmitted RENAME can never delete it. Files are replaced atomically by
+    // MoveFileEx; the type rules follow rename(2) as Linux nfsd does.
+    if (stat == NFS3_OK && strcmp(pathFrom, pathTo) != 0 && FileExists(pathTo)) {
+        DWORD fromAttr = GetFileAttributes(pathFrom);
+        DWORD toAttr = GetFileAttributes(pathTo);
+        bool fromIsDir = (fromAttr & FILE_ATTRIBUTE_DIRECTORY) && !(fromAttr & FILE_ATTRIBUTE_REPARSE_POINT);
+        bool toIsDir = (toAttr & FILE_ATTRIBUTE_DIRECTORY) && !(toAttr & FILE_ATTRIBUTE_REPARSE_POINT);
+
+        if (fromIsDir && !toIsDir) {
+            stat = NFS3ERR_NOTDIR;
+        } else if (!fromIsDir && toIsDir) {
+            stat = NFS3ERR_ISDIR;
+        } else if (toAttr & FILE_ATTRIBUTE_DIRECTORY) {
+            // MoveFileEx cannot replace a directory: remove the target first, which only
+            // succeeds for an empty directory or a directory symlink, so no data is lost
+            returnCode = RemoveFolder(pathTo);
+
+            if (returnCode == ERROR_DIR_NOT_EMPTY) {
+                stat = NFS3ERR_NOTEMPTY;
+            } else if (returnCode != 0) {
+                stat = NFS3ERR_IO;
+            }
+        } else {
+            _chmod(pathTo, S_IREAD | S_IWRITE);  //a read-only target would block the replace
+        }
+    }
+
+    if (stat == NFS3_OK && strcmp(pathFrom, pathTo) != 0) {
         errno_t errorNumber = RenameDirectory(pathFrom, pathTo);
 
         if (errorNumber != 0) {
@@ -1205,7 +1278,7 @@ nfsstat3 CNFS3Prog::ProcedureLINK(void)
 
 nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
 {
-    std::string path;
+    std::string path, parentPath;
     cookie3 cookie;
     cookieverf3 cookieverf;
     count3 count;
@@ -1216,9 +1289,10 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
     bool bFollows;
     nfsstat3 stat;
     char filePath[MAXPATHLEN];
-    int handle, nFound;
+    intptr_t handle;
+    int nFound;
     struct _finddata_t fileinfo;
-    unsigned int i, j;
+    unsigned int i, entrySize, replySize, entries;
 
     PrintLog("READDIR");
     bool validHandle = GetPath(path);
@@ -1226,6 +1300,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
     Read(&cookie);
     Read(&cookieverf);
     Read(&count);
+    PrintLog(" cookie=%lu count=%lu", (unsigned long)cookie, count);
     stat = CheckFile(cStr);
 
     if (stat == NFS3_OK) {
@@ -1245,32 +1320,51 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
         eof = true;
         handle = _findfirst(filePath, &fileinfo);
         bFollows = true;
+        entries = 0;
+        replySize = 0;
 
-        if (handle) {
+        if (handle == -1) {
+            PrintLog(" findfirst failed errno=%d", errno);
+        } else {
             nFound = 0;
 
             for (i = (unsigned int)cookie; i > 0; i--) {
                 nFound = _findnext(handle, &fileinfo);
             }
 
-            // TODO: Implement this workaround correctly with the
-            // count variable and not a fixed threshold of 10
             if (nFound == 0) {
-                j = 10;
+                // status + dir_attributes + cookieverf + list terminator + eof
+                replySize = 4 + 88 + 8 + 4 + 4;
 
                 do {
+                    // value follows + fileid + name length + padded name + cookie
+                    entrySize = 4 + 8 + 4 + (((unsigned int)strlen(fileinfo.name) + 3) & ~3) + 8;
+
+                    if (replySize + entrySize > count) {
+                        eof = false;
+                        break;
+                    }
+
+                    replySize += entrySize;
+                    ++entries;
                     Write(&bFollows); //value follows
-                    sprintf_s(filePath, "%s\\%s", cStr, fileinfo.name);
-                    fileid = GetFileID(filePath);
+
+                    // "." and ".." get the same fileid that LOOKUP returns for them
+                    if (strcmp(fileinfo.name, ".") == 0) {
+                        fileid = GetFileID(cStr);
+                    } else if (strcmp(fileinfo.name, "..") == 0) {
+                        GetParentPath(cStr, parentPath);
+                        fileid = GetFileID(parentPath.c_str());
+                    } else {
+                        sprintf_s(filePath, "%s\\%s", cStr, fileinfo.name);
+                        fileid = GetFileID(filePath);
+                    }
+
                     Write(&fileid); //file id
                     name.Set(fileinfo.name);
                     Write(&name); //name
                     ++cookie;
                     Write(&cookie); //cookie
-                    if (--j == 0) {
-                        eof = false;
-                        break;
-                    }
                 } while (_findnext(handle, &fileinfo) == 0);
             }
 
@@ -1280,6 +1374,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
         bFollows = false;
         Write(&bFollows);
         Write(&eof); //eof
+        PrintLog(" entries=%u bytes=%u eof=%d", entries, replySize, eof);
     }
 
     return stat;
@@ -1287,7 +1382,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIR(void)
 
 nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
 {
-    std::string path;
+    std::string path, parentPath;
     cookie3 cookie;
     cookieverf3 cookieverf;
     count3 dircount, maxcount;
@@ -1299,9 +1394,10 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
     bool eof;
     nfsstat3 stat;
     char filePath[MAXPATHLEN];
-    int handle, nFound;
+    intptr_t handle;
+    int nFound;
     struct _finddata_t fileinfo;
-    unsigned int i, j;
+    unsigned int i, nameSize, entryDirSize, entrySize, dirSize, replySize, entries;
     bool bFollows;
 
     PrintLog("READDIRPLUS");
@@ -1311,6 +1407,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
     Read(&cookieverf);
     Read(&dircount);
     Read(&maxcount);
+    PrintLog(" cookie=%lu dircount=%lu maxcount=%lu", (unsigned long)cookie, dircount, maxcount);
     stat = CheckFile(cStr);
 
     if (stat == NFS3_OK) {
@@ -1329,8 +1426,13 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
         sprintf_s(filePath, "%s\\*", cStr);
         handle = _findfirst(filePath, &fileinfo);
         eof = true;
+        entries = 0;
+        dirSize = 0;
+        replySize = 0;
 
-        if (handle) {
+        if (handle == -1) {
+            PrintLog(" findfirst failed errno=%d", errno);
+        } else {
             nFound = 0;
 
             for (i = (unsigned int)cookie; i > 0; i--) {
@@ -1339,26 +1441,47 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
 
             if (nFound == 0) {
                 bFollows = true;
-                j = 10;
+                // status + dir_attributes + cookieverf + list terminator + eof
+                replySize = 4 + 88 + 8 + 4 + 4;
 
                 do {
+                    // "." and ".." resolve the same way as in LOOKUP, so ".." never leaves the export
+                    if (strcmp(fileinfo.name, ".") == 0) {
+                        sprintf_s(filePath, "%s", cStr);
+                    } else if (strcmp(fileinfo.name, "..") == 0) {
+                        GetParentPath(cStr, parentPath);
+                        sprintf_s(filePath, "%s", parentPath.c_str());
+                    } else {
+                        sprintf_s(filePath, "%s\\%s", cStr, fileinfo.name);
+                    }
+
+                    name_attributes.attributes_follow = GetFileAttributesForNFS(filePath, &name_attributes.attributes);
+                    name_handle.handle_follows = GetFileHandle(filePath, &name_handle.handle);
+
+                    // dircount limits fileid + name + cookie only; maxcount limits the whole reply
+                    nameSize = 4 + (((unsigned int)strlen(fileinfo.name) + 3) & ~3);
+                    entryDirSize = 8 + nameSize + 8;
+                    entrySize = 4 + entryDirSize
+                        + 4 + (name_attributes.attributes_follow ? 84 : 0)
+                        + 4 + (name_handle.handle_follows ? 4 + ((name_handle.handle.length + 3) & ~3) : 0);
+
+                    if (dirSize + entryDirSize > dircount || replySize + entrySize > maxcount) {
+                        eof = false;
+                        break;
+                    }
+
+                    dirSize += entryDirSize;
+                    replySize += entrySize;
+                    ++entries;
                     Write(&bFollows); //value follows
-                    sprintf_s(filePath, "%s\\%s", cStr, fileinfo.name);
                     fileid = GetFileID(filePath);
                     Write(&fileid); //file id
                     name.Set(fileinfo.name);
                     Write(&name); //name
                     ++cookie;
                     Write(&cookie); //cookie
-                    name_attributes.attributes_follow = GetFileAttributesForNFS(filePath, &name_attributes.attributes);
                     Write(&name_attributes);
-                    name_handle.handle_follows = GetFileHandle(filePath, &name_handle.handle);
                     Write(&name_handle);
-
-                    if (--j == 0) {
-                        eof = false;
-                        break;
-                    }
                 } while (_findnext(handle, &fileinfo) == 0);
             }
 
@@ -1368,6 +1491,7 @@ nfsstat3 CNFS3Prog::ProcedureREADDIRPLUS(void)
         bFollows = false;
         Write(&bFollows); //value follows
         Write(&eof); //eof
+        PrintLog(" entries=%u dirbytes=%u bytes=%u eof=%d", entries, dirSize, replySize, eof);
     }
 
     return stat;
@@ -1928,16 +2052,11 @@ bool CNFS3Prog::GetFileAttributesForNFS(const char *path, fattr3 *pAttr)
         pAttr->type = NF3DIR;
         dwFlagsAndAttributes = FILE_ATTRIBUTE_DIRECTORY | FILE_FLAG_BACKUP_SEMANTICS;
     }
-    else if (fileAttr & FILE_ATTRIBUTE_ARCHIVE) {
-        pAttr->type = NF3REG;
-        dwFlagsAndAttributes = FILE_ATTRIBUTE_ARCHIVE | FILE_FLAG_OVERLAPPED;
-    }
-    else if (fileAttr & FILE_ATTRIBUTE_NORMAL) {
+    else {
+        // Anything that isn't a directory is a regular file, whatever else is set
+        // (READONLY, HIDDEN, SYSTEM, NOT_CONTENT_INDEXED, ... without ARCHIVE used to give type 0)
         pAttr->type = NF3REG;
         dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED;
-    }
-    else {
-        pAttr->type = 0;
     }
 
     if (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT) {
@@ -1948,6 +2067,7 @@ bool CNFS3Prog::GetFileAttributesForNFS(const char *path, fattr3 *pAttr)
 	hFile = CreateFile(path, FILE_READ_EA, FILE_SHARE_READ, NULL, OPEN_EXISTING, dwFlagsAndAttributes, NULL);
 
     if (hFile == INVALID_HANDLE_VALUE) {
+        PrintLog(" (CreateFile failed, error=%lu: %s)", GetLastError(), path);
         return false;
     }
 

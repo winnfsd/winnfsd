@@ -1,3 +1,17 @@
+## Unreleased
+
+**BUG FIXES & IMPROVEMENTS:**
+
+- Fix `ls` failing with NOENT from VxWorks 7 (and other clients that look up `.` and `..`): LOOKUP now resolves `.` and `..`, and `..` at an export root stays at the root
+- READDIR and READDIRPLUS respect the client's size limits instead of a fixed 10 entries, and set eof correctly
+- READDIR and READDIRPLUS report `.` and `..` with the same fileids, handles and attributes as LOOKUP
+- Fix directory listing and file lookups on 64-bit builds (search handles were truncated to int)
+- Files without the ARCHIVE or NORMAL attribute (read-only, hidden, ...) are reported as regular files instead of the invalid type 0
+- CREATE no longer truncates existing files; UNCHECKED, GUARDED and EXCLUSIVE modes follow RFC 1813
+- RENAME checks the source exists before touching the target and replaces files atomically, so a retransmitted RENAME can no longer delete the renamed file
+- Added a duplicate request cache for UDP, so retransmitted non-idempotent requests (CREATE, REMOVE, RENAME, ...) are not run twice
+- More detailed logging with `-log on`: OK results, READDIR sizes, failed lookups and attribute errors
+
 ## 2.4.0 (November 13, 2017)
 
 **BUG FIXES & IMPROVEMENTS:**

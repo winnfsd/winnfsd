@@ -51,6 +51,7 @@ class CFileTable
 };
 
 extern bool FileExists(const char *path);
+extern void GetParentPath(const char *path, std::string &parentPath);
 extern unsigned long GetFileID(const char *path);
 extern unsigned char *GetFileHandle(const char *path);
 extern bool GetFilePath(unsigned char *handle, std::string &filePath);
