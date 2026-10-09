@@ -298,6 +298,7 @@ class CNFS3Prog : public CRPCProg
     bool GetFileAttributesForNFS(const char *path, fattr3 *pAttr);
     UINT32 FileTimeToPOSIX(FILETIME ft);
     std::unordered_map<int, FILE*> unstableStorageFile;
+    std::unordered_map<std::string, createverf3> exclusiveCreateVerf;
 };
 
 #endif

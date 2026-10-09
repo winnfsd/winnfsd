@@ -854,6 +854,7 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
     wcc_data dir_wcc;
     nfsstat3 stat;
     FILE *pFile;
+    DWORD existingAttr;
 
     PrintLog("CREATE");
     std::string dirName;
@@ -864,11 +865,49 @@ nfsstat3 CNFS3Prog::ProcedureCREATE(void)
 
     dir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirName.c_str(), &dir_wcc.before.attributes);
 
-    pFile = _fsopen(path, "wb", _SH_DENYWR);
-       
-    if (pFile != NULL) {
-        fclose(pFile);
+    // Follow RFC 1813 3.3.8 like Linux nfsd: an existing file is never truncated unless
+    // UNCHECKED asks for a size, GUARDED fails with EXIST, and EXCLUSIVE only succeeds
+    // again for a retransmit carrying the same verifier.
+    existingAttr = GetFileAttributes(path);
+
+    if (existingAttr != INVALID_FILE_ATTRIBUTES) {
+        if (how.mode == GUARDED) {
+            stat = NFS3ERR_EXIST;
+        } else if (how.mode == EXCLUSIVE) {
+            stat = exclusiveCreateVerf.count(path) != 0 && exclusiveCreateVerf[path] == how.verf ? NFS3_OK : NFS3ERR_EXIST;
+        } else {
+            stat = NFS3_OK;
+
+            if (how.obj_attributes.size.set_it && (existingAttr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                pFile = _fsopen(path, "r+b", _SH_DENYWR);
+
+                if (pFile == NULL || _chsize_s(_fileno(pFile), how.obj_attributes.size.size) != 0) {
+                    stat = NFS3ERR_IO;
+                }
+
+                if (pFile != NULL) {
+                    fclose(pFile);
+                }
+            }
+        }
+    } else if ((pFile = _fsopen(path, "wb", _SH_DENYWR)) != NULL) {
         stat = NFS3_OK;
+
+        if (how.mode != EXCLUSIVE && how.obj_attributes.size.set_it && _chsize_s(_fileno(pFile), how.obj_attributes.size.size) != 0) {
+            stat = NFS3ERR_IO;
+        }
+
+        fclose(pFile);
+
+        if (how.mode == EXCLUSIVE) {
+            // ponytail: verifiers live in memory (Linux keeps them in atime/mtime), so a retransmit
+            // after a server restart gets EXIST; the cap keeps the map bounded
+            if (exclusiveCreateVerf.size() >= 1024) {
+                exclusiveCreateVerf.clear();
+            }
+
+            exclusiveCreateVerf[path] = how.verf;
+        }
     } else {
         char buffer[BUFFER_SIZE];
         errno_t errorNumber = errno;
@@ -1144,26 +1183,35 @@ nfsstat3 CNFS3Prog::ProcedureRENAME(void)
     fromdir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirFromName.c_str(), &fromdir_wcc.before.attributes);
     todir_wcc.before.attributes_follow = GetFileAttributesForNFS((char*)dirToName.c_str(), &todir_wcc.before.attributes);
     
-    if (FileExists(pathTo)) {
-		DWORD fileAttr = GetFileAttributes(pathTo);
-		if ((fileAttr & FILE_ATTRIBUTE_DIRECTORY) && (fileAttr & FILE_ATTRIBUTE_REPARSE_POINT)) {
-			returnCode = RemoveFolder(pathTo);
-			if (returnCode != 0) {
-				if (returnCode == ERROR_DIR_NOT_EMPTY) {
-					stat = NFS3ERR_NOTEMPTY;
-				} else {
-					stat = NFS3ERR_IO;
-				}
-			}
-		}
-		else {
-			if (!RemoveFile(pathTo)) {
-				stat = NFS3ERR_IO;
-			}
-		}
-    } 
-    
-    if (stat == NFS3_OK) {
+    // Only touch the target once the source is known to exist, so a failed or
+    // retransmitted RENAME can never delete it. Files are replaced atomically by
+    // MoveFileEx; the type rules follow rename(2) as Linux nfsd does.
+    if (stat == NFS3_OK && strcmp(pathFrom, pathTo) != 0 && FileExists(pathTo)) {
+        DWORD fromAttr = GetFileAttributes(pathFrom);
+        DWORD toAttr = GetFileAttributes(pathTo);
+        bool fromIsDir = (fromAttr & FILE_ATTRIBUTE_DIRECTORY) && !(fromAttr & FILE_ATTRIBUTE_REPARSE_POINT);
+        bool toIsDir = (toAttr & FILE_ATTRIBUTE_DIRECTORY) && !(toAttr & FILE_ATTRIBUTE_REPARSE_POINT);
+
+        if (fromIsDir && !toIsDir) {
+            stat = NFS3ERR_NOTDIR;
+        } else if (!fromIsDir && toIsDir) {
+            stat = NFS3ERR_ISDIR;
+        } else if (toAttr & FILE_ATTRIBUTE_DIRECTORY) {
+            // MoveFileEx cannot replace a directory: remove the target first, which only
+            // succeeds for an empty directory or a directory symlink, so no data is lost
+            returnCode = RemoveFolder(pathTo);
+
+            if (returnCode == ERROR_DIR_NOT_EMPTY) {
+                stat = NFS3ERR_NOTEMPTY;
+            } else if (returnCode != 0) {
+                stat = NFS3ERR_IO;
+            }
+        } else {
+            _chmod(pathTo, S_IREAD | S_IWRITE);  //a read-only target would block the replace
+        }
+    }
+
+    if (stat == NFS3_OK && strcmp(pathFrom, pathTo) != 0) {
         errno_t errorNumber = RenameDirectory(pathFrom, pathTo);
 
         if (errorNumber != 0) {

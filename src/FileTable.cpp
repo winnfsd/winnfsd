@@ -394,15 +394,18 @@ int RenameFile(const char *pathFrom, const char *pathTo)
         return false;
     }
 
-    errno_t errorNumber = rename(pathFrom, pathTo);
+    bool replacing = FileExists(pathTo) && strcmp(pathFrom, pathTo) != 0;
 
-    if (errorNumber == 0) { //success
-		g_FileTable.RenameFile(pathFrom, pathTo);
-        return errorNumber;
+    if (!MoveFileEx(pathFrom, pathTo, MOVEFILE_REPLACE_EXISTING)) {  //atomic replace of an existing file
+        return GetLastError() == ERROR_ACCESS_DENIED ? EACCES : EIO;
     }
-    else {
-        return errorNumber;
+
+    if (replacing) {
+        g_FileTable.RemoveItem(pathTo);  //the replaced file is gone, its handle goes stale
     }
+
+    g_FileTable.RenameFile(pathFrom, pathTo);
+    return 0;
 }
 
 int RenameDirectory(const char *pathFrom, const char *pathTo)

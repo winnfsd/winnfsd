@@ -11,6 +11,7 @@ class IOutputStream
     virtual void Write8(unsigned __int64 nValue) = 0;
     virtual void Seek(int nOffset, int nFrom) = 0;
     virtual int GetPosition(void) = 0;
+    virtual unsigned char *GetOutput(void) = 0;
 };
 
 #endif
