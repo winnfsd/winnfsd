@@ -347,13 +347,24 @@ void CFileTable::RenameFile(const char *pathFrom, const char* pathTo)
 
 bool FileExists(const char *path)
 {
-    int handle;
+    intptr_t handle;
     struct _finddata_t fileinfo;
 
     handle = _findfirst(path, &fileinfo);
     _findclose(handle);
 
     return handle == -1 ? false : strcmp(fileinfo.name, strrchr(path, '\\') + 1) == 0;  //filename must match case
+}
+
+void GetParentPath(const char *path, std::string &parentPath)
+{
+    tree_node_<FILE_ITEM> *node = g_FileTree.FindFileItemForPath(path);
+
+    if (node != NULL && node->parent != NULL) {
+        g_FileTree.GetNodeFullPath(node->parent, parentPath);
+    } else {
+        parentPath = path;  //export roots (top level nodes) and unknown paths are their own parent
+    }
 }
 
 unsigned long GetFileID(const char *path)
